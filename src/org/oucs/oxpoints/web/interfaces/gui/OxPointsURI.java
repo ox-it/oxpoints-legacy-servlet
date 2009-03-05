@@ -3,6 +3,8 @@ package org.oucs.oxpoints.web.interfaces.gui;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -11,16 +13,25 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.oucs.oxpoints.OxPointsConfiguration;
 import org.oucs.oxpoints.OxPointsConfigurationDummyImpl;
-import org.oucs.oxpoints.OxPointsSystem;
+import org.oucs.oxpoints.OxPointsLibrary;
+import org.oucs.oxpoints.entities.OxPointsEntityPool;
+import org.oucs.oxpoints.entities.poolutils.OxPointsEntityPoolConfiguration;
+import org.oucs.oxpoints.entities.transformation.EntityPoolTransformer;
+import org.oucs.oxpoints.entities.transformation.RDFPoolTransformerFactory;
+import org.oucs.oxpoints.entities.transformation.json.JSONPoolTransformer;
+import org.oucs.oxpoints.entities.transformation.kml.KMLPoolTransformer;
+import org.oucs.oxpoints.exceptions.EntityPoolInvalidConfigurationException;
 import org.oucs.oxpoints.exceptions.OxPointsException;
+import org.oucs.oxpoints.exceptions.UnsupportedFormatException;
 import org.oucs.oxpoints.helperscripts.importing.TEIImporter;
 import org.oucs.oxpoints.model.OxPoints;
 import org.oucs.oxpoints.model.OxPointsFactory;
+import org.oucs.oxpoints.model.OxPointsSnapshot;
 import org.oucs.oxpoints.model.query.OxPointsQuery;
 import org.oucs.oxpoints.model.query.defined.ListOfTypedEntities;
 import org.oucs.oxpoints.timedim.TimeInstant;
-import org.oucs.oxpoints.util.OxPointsOntologyUtils;
-import org.oucs.oxpoints.vocabulary.OxPointsVocab;
+import org.oucs.oxpoints.util.OxPointsOntologyLookup;
+import org.oucs.oxpoints.vocabulary.*;
 import org.xml.sax.SAXException;
 
 import com.hp.hpl.jena.ontology.OntClass;
@@ -35,31 +46,9 @@ public class OxPointsURI extends HttpServlet {
 	private static OxPoints oxp;
 	
 	public void init(){
-		OxPointsSystem.init(new OxPointsConfiguration(){
-			@Override
-			public String getDbURL() {
-				return "jdbc:mysql://localhost:8889/oxp";
-			}
-			@Override
-			public String getDbUser() {
-				return "root";
-			}
-			@Override
-			public String getDbPassword() {
-				return "root";
-			}
-			
-			@Override
-			public String getResourcePath() {
-				return "/Users/arno/Documents/workspace/Erewhon-Oxpoints/resources";
-			}
-		});
-
 		try {
-			oxp = OxPointsFactory.getEmptyTestOxPoints();
-			new TEIImporter(oxp, new File("/Users/arno/Documents/workspace/Erewhon-Oxpoints/conversion/resources/oxpoints.old.xml")).run();
-		} catch (OxPointsException e1) {
-			e1.printStackTrace();
+			oxp = OxPointsFactory.getEmptyInMemoryOxPoints();
+			new TEIImporter(oxp, new File("/Users/arno/Documents/workspace/Erewhon-Oxpoints/conversion/resources/oxpoints_plus.xml")).run();
 		} catch (ParserConfigurationException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -77,52 +66,107 @@ public class OxPointsURI extends HttpServlet {
 	 */
 	@Override
 	public void doGet(HttpServletRequest request, HttpServletResponse response){
-		OxPointsQuery query;
-		try {
-			String result = "";
-			
-			String yearS = request.getParameter("y");
-			String monthS = request.getParameter("m");
-			String dayS = request.getParameter("d");
-			
-			Integer year = null, month = null, day = null;
-			try{
-				if(null != yearS)
-					year = Integer.parseInt(yearS);
-				if(null != monthS)
-					month = Integer.parseInt(monthS);
-				if(null != dayS)
-					day = Integer.parseInt(dayS);
+		String mode = request.getParameter("mode");
+		if(null == mode)
+			processDefaultMode(request, response);
+		else if(mode.equals("all"))
+			processAllMode(request, response);
 
-			} catch(NumberFormatException e){}
+	}
+
+	private void processAllMode(HttpServletRequest request,
+			HttpServletResponse response) {
+		
+		String type = "#" + request.getParameter("type");
+		
+		for(String classURI : OxPointsOntologyLookup.getRegisteredClassesAsURIs()){
+			if(classURI.endsWith(type)){
+				// load snapshot
+				OxPointsSnapshot snapshot = oxp.getSnapshot(TimeInstant.now());
 				
-			TimeInstant ti;
-			if(null == year)
-				ti = TimeInstant.now();
-			else
-				ti = new TimeInstant(year, month, day);
-			
-			String typeName = request.getParameter("type");
-			if(typeName != null){
-				OntClass type = OxPointsOntologyUtils.getEntityType(typeName);
-				if(null == type)
-					result = "Unknown type: " + type;
-				else {
-					query = new ListOfTypedEntities(oxp, type, ti );
-					result = (String) query.execute(OxPointsQuery.FORMAT_KML);
+				OxPointsEntityPoolConfiguration config = new OxPointsEntityPoolConfiguration(snapshot);
+				config.addAcceptedType(classURI);
+				try {
+					OxPointsEntityPool pool = OxPointsEntityPool.createFrom(config);
+					output(pool, request, response);	
+				} catch (EntityPoolInvalidConfigurationException e) {
+					e.printStackTrace();
 				}
-			} else {
-				query = new ListOfTypedEntities(oxp, OxPointsVocab.College, ti );
-				result = (String) query.execute(OxPointsQuery.FORMAT_KML);
+				
+				break;
 			}
-			
+		}
+	}
+
+	private void processDefaultMode(HttpServletRequest request,
+			HttpServletResponse response) {
+				
+		// load parameters
+		String property = request.getParameter("property");
+		String value = request.getParameter("value");
+		
+		
+		// load snapshot
+		OxPointsSnapshot snapshot = oxp.getSnapshot(TimeInstant.now());
+
+		// load pool
+		String realProperty = getPropertyURI(property);
+		OxPointsEntityPool pool;
+		
+		if(null != value)
+			pool = snapshot.loadEntitiesWithProperty(realProperty, value);
+		else
+			pool = snapshot.loadEntitiesWithProperty(realProperty);
+		
+		output(pool, request, response);
+	}
+	
+	private void output(OxPointsEntityPool pool, HttpServletRequest request, HttpServletResponse response){
+		String format = request.getParameter("format");
+		
+		String output = "";
+		if(format != null && format.toLowerCase().equals("kml")){
 			response.setContentType("text/xml");
- 			response.getWriter().write(result);
-		} catch (OxPointsException e1) {
-			e1.printStackTrace();
+			
+			KMLPoolTransformer transformer = new KMLPoolTransformer();
+			output = transformer.transform(pool);
+		} else if(format != null &&  format.toLowerCase().equals("json")){
+			JSONPoolTransformer transformer = new JSONPoolTransformer();
+			output = (String) transformer.transform(pool);
+		} else {
+			response.setContentType("text/xml");
+			
+			EntityPoolTransformer transformer;
+			try {
+				transformer = RDFPoolTransformerFactory.getRDFPoolTransformer(OxPointsQuery.FORMAT_RDF_XML_ABBREV);
+				output = (String) transformer.transform(pool);
+			} catch (UnsupportedFormatException e) {
+				e.printStackTrace();
+			}
+		}
+			
+
+		try {
+			response.getWriter().write(output);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
+	
+	private String getPropertyURI(String property){
+		// prepare lookup tables
+		Map<String,String> namespacePrefixes = new HashMap<String, String>();
+		namespacePrefixes.put("oxp:", OxPointsVocab.NS);
+		namespacePrefixes.put("dc:", DC.NS);
+		namespacePrefixes.put("vCard:", VCard.NS);
+		namespacePrefixes.put("geo:", GeoVocab.NS);
+		
+		for(String prefix : namespacePrefixes.keySet()){
+			if(property.startsWith(prefix))
+				return namespacePrefixes.get(prefix) + property.substring(prefix.length());
+		}
+		
+		return "";
+	}
+
 }

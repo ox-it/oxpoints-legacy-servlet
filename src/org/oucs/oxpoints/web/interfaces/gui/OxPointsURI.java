@@ -11,30 +11,26 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.parsers.ParserConfigurationException;
 
-import org.oucs.oxpoints.OxPointsConfiguration;
-import org.oucs.oxpoints.OxPointsConfigurationDummyImpl;
-import org.oucs.oxpoints.OxPointsLibrary;
-import org.oucs.oxpoints.entities.OxPointsEntityPool;
-import org.oucs.oxpoints.entities.poolutils.OxPointsEntityPoolConfiguration;
+import org.oucs.oxpoints.entities.pool.OxPointsEntityPool;
+import org.oucs.oxpoints.entities.pool.OxPointsEntityPoolConfiguration;
 import org.oucs.oxpoints.entities.transformation.EntityPoolTransformer;
 import org.oucs.oxpoints.entities.transformation.RDFPoolTransformerFactory;
 import org.oucs.oxpoints.entities.transformation.json.JSONPoolTransformer;
 import org.oucs.oxpoints.entities.transformation.kml.KMLPoolTransformer;
 import org.oucs.oxpoints.exceptions.EntityPoolInvalidConfigurationException;
-import org.oucs.oxpoints.exceptions.OxPointsException;
 import org.oucs.oxpoints.exceptions.UnsupportedFormatException;
 import org.oucs.oxpoints.helperscripts.importing.TEIImporter;
 import org.oucs.oxpoints.model.OxPoints;
 import org.oucs.oxpoints.model.OxPointsFactory;
 import org.oucs.oxpoints.model.OxPointsSnapshot;
 import org.oucs.oxpoints.model.query.OxPointsQuery;
-import org.oucs.oxpoints.model.query.defined.ListOfTypedEntities;
 import org.oucs.oxpoints.timedim.TimeInstant;
 import org.oucs.oxpoints.util.OxPointsOntologyLookup;
-import org.oucs.oxpoints.vocabulary.*;
+import org.oucs.oxpoints.vocabulary.DC;
+import org.oucs.oxpoints.vocabulary.GeoVocab;
+import org.oucs.oxpoints.vocabulary.OxPointsVocab;
+import org.oucs.oxpoints.vocabulary.VCard;
 import org.xml.sax.SAXException;
-
-import com.hp.hpl.jena.ontology.OntClass;
 
 public class OxPointsURI extends HttpServlet {
 
@@ -123,15 +119,28 @@ public class OxPointsURI extends HttpServlet {
 	
 	private void output(OxPointsEntityPool pool, HttpServletRequest request, HttpServletResponse response){
 		String format = request.getParameter("format");
+		String orderBy = request.getParameter("orderBy");
+		String jsonNesting = request.getParameter("jsonNesting");
 		
 		String output = "";
 		if(format != null && format.toLowerCase().equals("kml")){
 			response.setContentType("text/xml");
 			
 			KMLPoolTransformer transformer = new KMLPoolTransformer();
+			if(null != orderBy){
+				String realOrderBy = getPropertyURI(orderBy);
+				transformer.setOrderBy(realOrderBy);
+			}
+			
 			output = transformer.transform(pool);
 		} else if(format != null &&  format.toLowerCase().equals("json")){
 			JSONPoolTransformer transformer = new JSONPoolTransformer();
+			if(null != jsonNesting){
+				try{
+					int level = Integer.parseInt(jsonNesting);
+					transformer.setNesting(level);
+				} catch(NumberFormatException e){}
+			}
 			output = (String) transformer.transform(pool);
 		} else {
 			response.setContentType("text/xml");

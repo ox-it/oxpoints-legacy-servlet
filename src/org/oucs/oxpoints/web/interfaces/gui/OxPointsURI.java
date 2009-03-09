@@ -1,8 +1,6 @@
 package org.oucs.oxpoints.web.interfaces.gui;
 
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -11,10 +9,7 @@ import java.util.Map;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.xml.parsers.ParserConfigurationException;
 
-import org.oucs.oxpoints.OxPointsConfiguration;
-import org.oucs.oxpoints.OxPointsLibrary;
 import org.oucs.oxpoints.entities.pool.OxPointsEntityPool;
 import org.oucs.oxpoints.entities.pool.OxPointsEntityPoolConfiguration;
 import org.oucs.oxpoints.entities.transformation.EntityPoolTransformer;
@@ -23,7 +18,6 @@ import org.oucs.oxpoints.entities.transformation.json.JSONPoolTransformer;
 import org.oucs.oxpoints.entities.transformation.kml.KMLPoolTransformer;
 import org.oucs.oxpoints.exceptions.EntityPoolInvalidConfigurationException;
 import org.oucs.oxpoints.exceptions.UnsupportedFormatException;
-import org.oucs.oxpoints.helperscripts.importing.TEIImporter;
 import org.oucs.oxpoints.model.OxPoints;
 import org.oucs.oxpoints.model.OxPointsFactory;
 import org.oucs.oxpoints.model.OxPointsSnapshot;
@@ -35,7 +29,6 @@ import org.oucs.oxpoints.vocabulary.DC;
 import org.oucs.oxpoints.vocabulary.GeoVocab;
 import org.oucs.oxpoints.vocabulary.OxPointsVocab;
 import org.oucs.oxpoints.vocabulary.VCard;
-import org.xml.sax.SAXException;
 
 public class OxPointsURI extends HttpServlet {
 
@@ -124,6 +117,7 @@ public class OxPointsURI extends HttpServlet {
 		String format = request.getParameter("format");
 		String orderBy = request.getParameter("orderBy");
 		String jsonNesting = request.getParameter("jsonNesting");
+		boolean displayParentName = request.getParameter("parentName") == null ? true : request.getParameter("parentName").equals("false");
 		
 		String output = "";
 		if(format != null && format.toLowerCase().equals("kml")){
@@ -134,6 +128,7 @@ public class OxPointsURI extends HttpServlet {
 				String realOrderBy = getPropertyURI(orderBy);
 				transformer.setOrderBy(realOrderBy);
 			}
+			transformer.setDisplayParentName(displayParentName);
 			
 			output = transformer.transform(pool);
 		} else if(format != null &&  format.toLowerCase().equals("json")){

@@ -2,7 +2,9 @@ package org.oucs.oxpoints.web.interfaces.gui;
 
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -11,6 +13,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.oucs.oxpoints.OxPointsConfiguration;
+import org.oucs.oxpoints.OxPointsLibrary;
 import org.oucs.oxpoints.entities.pool.OxPointsEntityPool;
 import org.oucs.oxpoints.entities.pool.OxPointsEntityPoolConfiguration;
 import org.oucs.oxpoints.entities.transformation.EntityPoolTransformer;
@@ -26,6 +30,7 @@ import org.oucs.oxpoints.model.OxPointsSnapshot;
 import org.oucs.oxpoints.model.query.OxPointsQuery;
 import org.oucs.oxpoints.timedim.TimeInstant;
 import org.oucs.oxpoints.util.OxPointsOntologyLookup;
+import org.oucs.oxpoints.util.Performance;
 import org.oucs.oxpoints.vocabulary.DC;
 import org.oucs.oxpoints.vocabulary.GeoVocab;
 import org.oucs.oxpoints.vocabulary.OxPointsVocab;
@@ -41,10 +46,21 @@ public class OxPointsURI extends HttpServlet {
 
 	private static OxPoints oxp;
 	
+	private static OxPointsSnapshot snapshot;
+	
 	public void init(){
 		try {
+			// load oxPoints
 			oxp = OxPointsFactory.getEmptyInMemoryOxPoints();
+			
+			InputStream fis = Thread.currentThread().getContextClassLoader().getResourceAsStream("resources/graphs.rdf");
+			InputStream cdg_fis = Thread.currentThread().getContextClassLoader().getResourceAsStream("resources/cdg.rdf");
+			
+			oxp.read(fis, cdg_fis);
+			oxp.recreateTimeDimensionIndex();
+			
 			new TEIImporter(oxp, new File("/Users/arno/Documents/workspace/Erewhon-Oxpoints/conversion/resources/oxpoints_plus.xml")).run();
+			snapshot = oxp.getSnapshot(TimeInstant.now());
 		} catch (ParserConfigurationException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -63,10 +79,12 @@ public class OxPointsURI extends HttpServlet {
 	@Override
 	public void doGet(HttpServletRequest request, HttpServletResponse response){
 		String mode = request.getParameter("mode");
+		Performance.start("process request");
 		if(null == mode)
 			processDefaultMode(request, response);
 		else if(mode.equals("all"))
 			processAllMode(request, response);
+		Performance.stop();
 
 	}
 
@@ -78,13 +96,20 @@ public class OxPointsURI extends HttpServlet {
 		for(String classURI : OxPointsOntologyLookup.getRegisteredClassesAsURIs()){
 			if(classURI.endsWith(type)){
 				// load snapshot
-				OxPointsSnapshot snapshot = oxp.getSnapshot(TimeInstant.now());
+				//Performance.start("Create Snapshot");
+				//OxPointsSnapshot snapshot = oxp.getSnapshot(TimeInstant.now());
+				//Performance.stop();
 				
+				Performance.start("Create Pool");
 				OxPointsEntityPoolConfiguration config = new OxPointsEntityPoolConfiguration(snapshot);
 				config.addAcceptedType(classURI);
 				try {
 					OxPointsEntityPool pool = OxPointsEntityPool.createFrom(config);
-					output(pool, request, response);	
+					Performance.stop();
+					
+					Performance.start("Generate Output");
+					output(pool, request, response);
+					Performance.stop();
 				} catch (EntityPoolInvalidConfigurationException e) {
 					e.printStackTrace();
 				}

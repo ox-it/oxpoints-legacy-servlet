@@ -49,28 +49,17 @@ public class OxPointsURI extends HttpServlet {
 	private static OxPointsSnapshot snapshot;
 	
 	public void init(){
-		try {
-			// load oxPoints
-			oxp = OxPointsFactory.getEmptyInMemoryOxPoints();
-			
-			InputStream fis = Thread.currentThread().getContextClassLoader().getResourceAsStream("resources/graphs.rdf");
-			InputStream cdg_fis = Thread.currentThread().getContextClassLoader().getResourceAsStream("resources/cdg.rdf");
-			
-			oxp.read(fis, cdg_fis);
-			oxp.recreateTimeDimensionIndex();
-			
-			new TEIImporter(oxp, new File("/Users/arno/Documents/workspace/Erewhon-Oxpoints/conversion/resources/oxpoints_plus.xml")).run();
-			snapshot = oxp.getSnapshot(TimeInstant.now());
-		} catch (ParserConfigurationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (SAXException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		// load oxPoints
+		oxp = OxPointsFactory.getEmptyInMemoryOxPoints();
+		
+		InputStream fis = Thread.currentThread().getContextClassLoader().getResourceAsStream("resources/graphs.rdf");
+		InputStream cdg_fis = Thread.currentThread().getContextClassLoader().getResourceAsStream("resources/cdg.rdf");
+		
+		oxp.read(fis, cdg_fis);
+		oxp.recreateTimeDimensionIndex();
+		
+		snapshot = oxp.getSnapshot(TimeInstant.now());
+		
 	}
 	
 	/**
@@ -95,21 +84,11 @@ public class OxPointsURI extends HttpServlet {
 		
 		for(String classURI : OxPointsOntologyLookup.getRegisteredClassesAsURIs()){
 			if(classURI.endsWith(type)){
-				// load snapshot
-				//Performance.start("Create Snapshot");
-				//OxPointsSnapshot snapshot = oxp.getSnapshot(TimeInstant.now());
-				//Performance.stop();
-				
-				Performance.start("Create Pool");
 				OxPointsEntityPoolConfiguration config = new OxPointsEntityPoolConfiguration(snapshot);
 				config.addAcceptedType(classURI);
 				try {
 					OxPointsEntityPool pool = OxPointsEntityPool.createFrom(config);
-					Performance.stop();
-					
-					Performance.start("Generate Output");
 					output(pool, request, response);
-					Performance.stop();
 				} catch (EntityPoolInvalidConfigurationException e) {
 					e.printStackTrace();
 				}
@@ -125,7 +104,6 @@ public class OxPointsURI extends HttpServlet {
 		// load parameters
 		String property = request.getParameter("property");
 		String value = request.getParameter("value");
-		
 		
 		// load snapshot
 		OxPointsSnapshot snapshot = oxp.getSnapshot(TimeInstant.now());

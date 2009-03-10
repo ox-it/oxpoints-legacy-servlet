@@ -28,6 +28,6 @@
 	<classpathentry kind="lib" path="lib/oxpoints/lib/xml-apis.jar"/>
 	<classpathentry kind="lib" path="lib/servlet-stuff/jsp-api.jar"/>
 	<classpathentry kind="lib" path="lib/servlet-stuff/servlet-api.jar"/>
-	<classpathentry kind="lib" path="lib/oxpoints/oxpoints.jar"/>
+	<classpathentry kind="lib" path="lib/gaboto.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

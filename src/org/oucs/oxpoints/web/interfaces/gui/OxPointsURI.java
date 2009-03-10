@@ -9,26 +9,32 @@ import java.util.Map;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.xml.parsers.ParserConfigurationException;
 
-import org.oucs.oxpoints.entities.pool.OxPointsEntityPool;
-import org.oucs.oxpoints.entities.pool.OxPointsEntityPoolConfiguration;
-import org.oucs.oxpoints.entities.transformation.EntityPoolTransformer;
-import org.oucs.oxpoints.entities.transformation.RDFPoolTransformerFactory;
-import org.oucs.oxpoints.entities.transformation.json.JSONPoolTransformer;
-import org.oucs.oxpoints.entities.transformation.kml.KMLPoolTransformer;
-import org.oucs.oxpoints.exceptions.EntityPoolInvalidConfigurationException;
-import org.oucs.oxpoints.exceptions.UnsupportedFormatException;
-import org.oucs.oxpoints.model.OxPoints;
-import org.oucs.oxpoints.model.OxPointsFactory;
-import org.oucs.oxpoints.model.OxPointsSnapshot;
-import org.oucs.oxpoints.model.query.OxPointsQuery;
-import org.oucs.oxpoints.timedim.TimeInstant;
-import org.oucs.oxpoints.util.OxPointsOntologyLookup;
-import org.oucs.oxpoints.util.Performance;
-import org.oucs.oxpoints.vocabulary.DC;
-import org.oucs.oxpoints.vocabulary.GeoVocab;
-import org.oucs.oxpoints.vocabulary.OxPointsVocab;
-import org.oucs.oxpoints.vocabulary.VCard;
+import org.oucs.gaboto.GabotoConfiguration;
+import org.oucs.gaboto.GabotoLibrary;
+import org.oucs.gaboto.entities.pool.GabotoEntityPool;
+import org.oucs.gaboto.entities.pool.GabotoEntityPoolConfiguration;
+import org.oucs.gaboto.entities.transformation.EntityPoolTransformer;
+import org.oucs.gaboto.entities.transformation.RDFPoolTransformerFactory;
+import org.oucs.gaboto.entities.transformation.json.GeoJSONPoolTransfomer;
+import org.oucs.gaboto.entities.transformation.json.JSONPoolTransformer;
+import org.oucs.gaboto.entities.transformation.kml.KMLPoolTransformer;
+import org.oucs.gaboto.exceptions.EntityPoolInvalidConfigurationException;
+import org.oucs.gaboto.exceptions.UnsupportedFormatException;
+import org.oucs.gaboto.model.Gaboto;
+import org.oucs.gaboto.model.GabotoFactory;
+import org.oucs.gaboto.model.GabotoSnapshot;
+import org.oucs.gaboto.model.query.GabotoQuery;
+import org.oucs.gaboto.timedim.TimeInstant;
+import org.oucs.gaboto.util.GabotoOntologyLookup;
+import org.oucs.gaboto.vocabulary.GeoVocab;
+import org.oucs.gaboto.vocabulary.OxPointsVocab;
+import org.oucs.gaboto.vocabulary.VCard;
+import org.xml.sax.SAXException;
+
+import com.hp.hpl.jena.vocabulary.DC;
+
 
 public class OxPointsURI extends HttpServlet {
 
@@ -37,21 +43,30 @@ public class OxPointsURI extends HttpServlet {
 	 */
 	private static final long serialVersionUID = 4155078999145248554L;
 
-	private static OxPoints oxp;
+	private static Gaboto gaboto;
 	
-	private static OxPointsSnapshot snapshot;
+	private static GabotoSnapshot snapshot;
 	
 	public void init(){
-		// load oxPoints
-		oxp = OxPointsFactory.getEmptyInMemoryOxPoints();
+		// load Gaboto
+		try {
+			GabotoLibrary.init(GabotoConfiguration.fromConfigFile());
+		} catch (ParserConfigurationException e) {
+			e.printStackTrace();
+		} catch (SAXException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		gaboto = GabotoFactory.getEmptyInMemoryGaboto();
 		
 		InputStream fis = Thread.currentThread().getContextClassLoader().getResourceAsStream("resources/graphs.rdf");
 		InputStream cdg_fis = Thread.currentThread().getContextClassLoader().getResourceAsStream("resources/cdg.rdf");
 		
-		oxp.read(fis, cdg_fis);
-		oxp.recreateTimeDimensionIndex();
+		gaboto.read(fis, cdg_fis);
+		gaboto.recreateTimeDimensionIndex();
 		
-		snapshot = oxp.getSnapshot(TimeInstant.now());
+		snapshot = gaboto.getSnapshot(TimeInstant.now());
 		
 	}
 	
@@ -61,13 +76,10 @@ public class OxPointsURI extends HttpServlet {
 	@Override
 	public void doGet(HttpServletRequest request, HttpServletResponse response){
 		String mode = request.getParameter("mode");
-		Performance.start("process request");
 		if(null == mode)
 			processDefaultMode(request, response);
 		else if(mode.equals("all"))
 			processAllMode(request, response);
-		Performance.stop();
-
 	}
 
 	private void processAllMode(HttpServletRequest request,
@@ -75,12 +87,12 @@ public class OxPointsURI extends HttpServlet {
 		
 		String type = "#" + request.getParameter("type");
 		
-		for(String classURI : OxPointsOntologyLookup.getRegisteredClassesAsURIs()){
+		for(String classURI : GabotoOntologyLookup.getRegisteredClassesAsURIs()){
 			if(classURI.endsWith(type)){
-				OxPointsEntityPoolConfiguration config = new OxPointsEntityPoolConfiguration(snapshot);
+				GabotoEntityPoolConfiguration config = new GabotoEntityPoolConfiguration(snapshot);
 				config.addAcceptedType(classURI);
 				try {
-					OxPointsEntityPool pool = OxPointsEntityPool.createFrom(config);
+					GabotoEntityPool pool = GabotoEntityPool.createFrom(config);
 					output(pool, request, response);
 				} catch (EntityPoolInvalidConfigurationException e) {
 					e.printStackTrace();
@@ -99,11 +111,11 @@ public class OxPointsURI extends HttpServlet {
 		String value = request.getParameter("value");
 		
 		// load snapshot
-		OxPointsSnapshot snapshot = oxp.getSnapshot(TimeInstant.now());
+		GabotoSnapshot snapshot = gaboto.getSnapshot(TimeInstant.now());
 
 		// load pool
 		String realProperty = getPropertyURI(property);
-		OxPointsEntityPool pool;
+		GabotoEntityPool pool;
 		
 		if(null != value)
 			pool = snapshot.loadEntitiesWithProperty(realProperty, value);
@@ -113,7 +125,7 @@ public class OxPointsURI extends HttpServlet {
 		output(pool, request, response);
 	}
 	
-	private void output(OxPointsEntityPool pool, HttpServletRequest request, HttpServletResponse response){
+	private void output(GabotoEntityPool pool, HttpServletRequest request, HttpServletResponse response){
 		String format = request.getParameter("format");
 		String orderBy = request.getParameter("orderBy");
 		String jsonNesting = request.getParameter("jsonNesting");
@@ -140,12 +152,20 @@ public class OxPointsURI extends HttpServlet {
 				} catch(NumberFormatException e){}
 			}
 			output = (String) transformer.transform(pool);
+		} else if(format != null &&  format.toLowerCase().equals("geojson")){
+			GeoJSONPoolTransfomer transformer = new GeoJSONPoolTransfomer();
+			if(null != orderBy){
+				String realOrderBy = getPropertyURI(orderBy);
+				transformer.setOrderBy(realOrderBy);
+			}
+			transformer.setDisplayParentName(displayParentName);
+			output = (String) transformer.transform(pool);
 		} else {
 			response.setContentType("text/xml");
 			
 			EntityPoolTransformer transformer;
 			try {
-				transformer = RDFPoolTransformerFactory.getRDFPoolTransformer(OxPointsQuery.FORMAT_RDF_XML_ABBREV);
+				transformer = RDFPoolTransformerFactory.getRDFPoolTransformer(GabotoQuery.FORMAT_RDF_XML_ABBREV);
 				output = (String) transformer.transform(pool);
 			} catch (UnsupportedFormatException e) {
 				e.printStackTrace();

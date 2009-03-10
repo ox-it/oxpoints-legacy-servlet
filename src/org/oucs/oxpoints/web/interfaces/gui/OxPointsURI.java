@@ -11,8 +11,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.oucs.gaboto.GabotoConfiguration;
 import org.oucs.gaboto.GabotoLibrary;
+import org.oucs.gaboto.entities.GabotoEntity;
 import org.oucs.gaboto.entities.pool.GabotoEntityPool;
 import org.oucs.gaboto.entities.pool.GabotoEntityPoolConfiguration;
 import org.oucs.gaboto.entities.transformation.EntityPoolTransformer;
@@ -110,6 +112,8 @@ public class OxPointsURI extends HttpServlet {
 		String property = request.getParameter("property");
 		String value = request.getParameter("value");
 		
+		String values[] = value.split("[|]");
+		
 		// load snapshot
 		GabotoSnapshot snapshot = gaboto.getSnapshot(TimeInstant.now());
 
@@ -117,10 +121,16 @@ public class OxPointsURI extends HttpServlet {
 		String realProperty = getPropertyURI(property);
 		GabotoEntityPool pool;
 		
-		if(null != value)
-			pool = snapshot.loadEntitiesWithProperty(realProperty, value);
-		else
+		if(null == value)
 			pool = snapshot.loadEntitiesWithProperty(realProperty);
+		else {
+			pool = new GabotoEntityPool(gaboto, snapshot);
+			for(String v : values){
+				GabotoEntityPool p = snapshot.loadEntitiesWithProperty(realProperty, v);
+				for(GabotoEntity e : p.getEntities())
+					pool.addEntity(e);
+			}
+		}
 		
 		output(pool, request, response);
 	}

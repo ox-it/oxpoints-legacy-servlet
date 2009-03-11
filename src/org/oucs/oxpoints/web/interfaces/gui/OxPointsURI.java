@@ -17,11 +17,11 @@ import org.oucs.gaboto.GabotoLibrary;
 import org.oucs.gaboto.entities.GabotoEntity;
 import org.oucs.gaboto.entities.pool.GabotoEntityPool;
 import org.oucs.gaboto.entities.pool.GabotoEntityPoolConfiguration;
-import org.oucs.gaboto.entities.transformation.EntityPoolTransformer;
-import org.oucs.gaboto.entities.transformation.RDFPoolTransformerFactory;
-import org.oucs.gaboto.entities.transformation.json.GeoJSONPoolTransfomer;
-import org.oucs.gaboto.entities.transformation.json.JSONPoolTransformer;
-import org.oucs.gaboto.entities.transformation.kml.KMLPoolTransformer;
+import org.oucs.gaboto.transformation.EntityPoolTransformer;
+import org.oucs.gaboto.transformation.RDFPoolTransformerFactory;
+import org.oucs.gaboto.transformation.json.GeoJSONPoolTransfomer;
+import org.oucs.gaboto.transformation.json.JSONPoolTransformer;
+import org.oucs.gaboto.transformation.kml.KMLPoolTransformer;
 import org.oucs.gaboto.exceptions.EntityPoolInvalidConfigurationException;
 import org.oucs.gaboto.exceptions.UnsupportedFormatException;
 import org.oucs.gaboto.model.Gaboto;
@@ -140,6 +140,12 @@ public class OxPointsURI extends HttpServlet {
 		String orderBy = request.getParameter("orderBy");
 		String jsonNesting = request.getParameter("jsonNesting");
 		boolean displayParentName = request.getParameter("parentName") == null ? true : request.getParameter("parentName").equals("false");
+		String jsonCallback = request.getParameter("jsCallback");
+
+		// clean params
+		if(jsonCallback != null){
+			jsonCallback = jsonCallback.replaceAll("[^a-zA-Z0-9_]", "");
+		}
 		
 		String output = "";
 		if(format != null && format.toLowerCase().equals("kml")){
@@ -161,7 +167,12 @@ public class OxPointsURI extends HttpServlet {
 					transformer.setNesting(level);
 				} catch(NumberFormatException e){}
 			}
+
+			if(null != jsonCallback)
+				output = jsonCallback + "(\n";
 			output = (String) transformer.transform(pool);
+			if(null != jsonCallback)
+				output += ");";
 		} else if(format != null &&  format.toLowerCase().equals("geojson")){
 			GeoJSONPoolTransfomer transformer = new GeoJSONPoolTransfomer();
 			if(null != orderBy){
@@ -169,7 +180,12 @@ public class OxPointsURI extends HttpServlet {
 				transformer.setOrderBy(realOrderBy);
 			}
 			transformer.setDisplayParentName(displayParentName);
-			output = (String) transformer.transform(pool);
+
+			if(null != jsonCallback)
+				output = jsonCallback + "(\n";
+			output += (String) transformer.transform(pool);
+			if(null != jsonCallback)
+				output += ");";
 		} else {
 			response.setContentType("text/xml");
 			

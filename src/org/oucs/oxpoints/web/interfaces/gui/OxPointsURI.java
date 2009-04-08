@@ -11,7 +11,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.parsers.ParserConfigurationException;
 
-import org.apache.commons.lang.ArrayUtils;
 import org.oucs.gaboto.GabotoConfiguration;
 import org.oucs.gaboto.GabotoLibrary;
 import org.oucs.gaboto.entities.GabotoEntity;
@@ -37,6 +36,11 @@ import org.xml.sax.SAXException;
 
 import com.hp.hpl.jena.vocabulary.DC;
 
+/**
+ * Try invoking with 
+ * http://127.0.0.1:8080/OxPointsUriGui/OxPointsURI?property=oxp:hasOUCSCode&value=oucs&format=kml
+ * 
+ */
 
 public class OxPointsURI extends HttpServlet {
 
@@ -110,7 +114,15 @@ public class OxPointsURI extends HttpServlet {
 				
 		// load parameters
 		String property = request.getParameter("property");
+		if (property == null) { 
+			error(response, "'property' parameter missing");
+			return;
+		}
 		String value = request.getParameter("value");
+		if (value == null) { 
+			error(response, "'value' parameter missing");
+			return;
+		}
 		
 		String values[] = value.split("[|]");
 		
@@ -135,6 +147,13 @@ public class OxPointsURI extends HttpServlet {
 		output(pool, request, response);
 	}
 	
+	private void error(HttpServletResponse response, String errorText) { 
+		try { 
+          response.getWriter().write("Error: " + errorText);
+		} catch (IOException e) { 
+			e.printStackTrace();
+		}
+	}
 	private void output(GabotoEntityPool pool, HttpServletRequest request, HttpServletResponse response){
 		String format = request.getParameter("format");
 		String orderBy = request.getParameter("orderBy");

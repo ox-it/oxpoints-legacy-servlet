@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<project name="URI Interface">
+  <bannerLeft>
+    <name>GPSTracker</name>
+    <src>http://erewhon.oucs.ox.ac.uk/images/logo.png</src> 
+    <href>http://erewhon.oucs.ox.ac.uk/</href>
+  </bannerLeft>
+
+  <body>
+    <links>
+      <item name="Repository"        href="../maven2/"/>
+    </links>
+    <menu name="Erewhon">
+      <item name="Parent"            href="../index.html"/>
+    </menu>
+    ${reports}
+  </body>
+</project>

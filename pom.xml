@@ -29,15 +29,30 @@
          <version>2.5.7</version>
       </dependency>
       <dependency>
+       <groupId>de.fuberlin.wiwss.ng4j</groupId>
+       <artifactId>ng4j</artifactId>
+       <version>0.6</version>
+      </dependency>
+      <dependency>
+        <groupId>org.json</groupId>
+        <artifactId>json</artifactId>
+        <version>unk</version>
+      </dependency> 
+      <dependency>
        <groupId>javax.servlet</groupId>
        <artifactId>servlet-api</artifactId>
        <version>2.4</version>
        <scope>compile</scope>
       </dependency>
       <dependency>
-       <groupId>de.fuberlin.wiwss.ng4j</groupId>
-       <artifactId>ng4j</artifactId>
-       <version>0.6</version>
+       <groupId>log4j</groupId>
+       <artifactId>log4j</artifactId>
+       <version>1.2.12</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-lang</groupId>
+        <artifactId>commons-lang</artifactId>
+        <version>2.4</version>
       </dependency>
    </dependencies>
    <build>
@@ -52,6 +67,23 @@
             </configuration>
          </plugin>
       </plugins>
+   <!-- Resources that are packaged up inside the JAR file -->
+   <resources>
+    <resource>
+     <directory>src/main/java</directory>
+     <includes>
+      <include>**/*.properties</include>
+     </includes>
+    </resource>
+    <resource>
+     <directory>resources</directory>
+     <targetPath>resources</targetPath>
+     <includes>
+      <include>**/*.rdf</include>
+     </includes>
+    </resource>
+   </resources>
+      
    </build>
   <reporting>
      <plugins>

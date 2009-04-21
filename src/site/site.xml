@@ -13,6 +13,9 @@
     <menu name="Erewhon">
       <item name="Parent"            href="../index.html"/>
     </menu>
+    <menu name="URI Interface" >
+        <item name="Rewrites"        href="rewrites.html"/>
+    </menu>
     ${reports}
   </body>
 </project>

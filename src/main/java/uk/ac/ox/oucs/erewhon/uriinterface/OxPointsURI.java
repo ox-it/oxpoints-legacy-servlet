@@ -202,7 +202,8 @@ public class OxPointsURI extends HttpServlet {
       if(null != jsonCallback)
         output += ");";
     } else {
-      response.setContentType("text/xml");
+      // Let apache and the browser handle content to based upon extension
+      //response.setContentType("text/xml");
       
       EntityPoolTransformer transformer;
       try {

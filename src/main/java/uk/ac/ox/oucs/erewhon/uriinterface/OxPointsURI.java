@@ -155,7 +155,8 @@ public class OxPointsURI extends HttpServlet {
     String format = request.getParameter("format");
     String orderBy = request.getParameter("orderBy");
     String jsonNesting = request.getParameter("jsonNesting");
-    boolean displayParentName = request.getParameter("parentName") == null ? true : request.getParameter("parentName").equals("false");
+    boolean displayParentName = request.getParameter("parentName") == null ? 
+    		true : request.getParameter("parentName").equals("false");
     String jsonCallback = request.getParameter("jsCallback");
 
     // clean params
@@ -182,7 +183,7 @@ public class OxPointsURI extends HttpServlet {
           int level = Integer.parseInt(jsonNesting);
           transformer.setNesting(level);
         } catch(NumberFormatException e){
-        	throw new RuntimeException(e);
+          throw new RuntimeException(e);
         }
       }
 
@@ -205,7 +206,9 @@ public class OxPointsURI extends HttpServlet {
       if(null != jsonCallback)
         output += ");";
     } else {
-      // Let apache and the browser handle content to based upon extension
+      // Apache and the browser should handle content to based upon extension
+      // however my browser is intent upon rendering it without passing to 
+      // Google Earth
       response.setContentType("application/vnd.google-earth.kml+xml");
       
       EntityPoolTransformer transformer;

@@ -123,6 +123,7 @@ public class OxPointsURI extends HttpServlet {
     String values[] = value.split("[|]");
     
     // load snapshot
+    // FIXME hiding field
     GabotoSnapshot snapshot = gaboto.getSnapshot(TimeInstant.now());
 
     // load pool
@@ -180,7 +181,9 @@ public class OxPointsURI extends HttpServlet {
         try{
           int level = Integer.parseInt(jsonNesting);
           transformer.setNesting(level);
-        } catch(NumberFormatException e){}
+        } catch(NumberFormatException e){
+        	throw new RuntimeException(e);
+        }
       }
 
       if(null != jsonCallback)
@@ -197,13 +200,13 @@ public class OxPointsURI extends HttpServlet {
       transformer.setDisplayParentName(displayParentName);
 
       if(null != jsonCallback)
-        output = jsonCallback + "(\n";
+        output = jsonCallback + "(" + "\n";
       output += (String) transformer.transform(pool);
       if(null != jsonCallback)
         output += ");";
     } else {
       // Let apache and the browser handle content to based upon extension
-      //response.setContentType("text/xml");
+      response.setContentType("application/vnd.google-earth.kml+xml");
       
       EntityPoolTransformer transformer;
       try {

@@ -124,7 +124,7 @@ public class OxPointsURI extends HttpServlet {
     
     // load snapshot
     // FIXME hiding field
-    GabotoSnapshot snapshot = gaboto.getSnapshot(TimeInstant.now());
+    //GabotoSnapshot snapshot = gaboto.getSnapshot(TimeInstant.now());
 
     // load pool
     String realProperty = getPropertyURI(property);
@@ -151,13 +151,22 @@ public class OxPointsURI extends HttpServlet {
       e.printStackTrace();
     }
   }
+  
+  private String lowercaseRequestParameter(HttpServletRequest request, String name) { 
+    String p = request.getParameter(name);
+    if (p != null) 
+      p = p.toLowerCase();
+    return p;
+  }
+  
   private void output(GabotoEntityPool pool, HttpServletRequest request, HttpServletResponse response){
-    String format = request.getParameter("format");
-    String orderBy = request.getParameter("orderBy");
-    String jsonNesting = request.getParameter("jsonNesting");
-    boolean displayParentName = request.getParameter("parentName") == null ? 
-    		true : request.getParameter("parentName").equals("false");
-    String jsonCallback = request.getParameter("jsCallback");
+    String format = lowercaseRequestParameter(request,"format");
+    if (format == null) format = "xml"; 
+    String orderBy = lowercaseRequestParameter(request,"orderBy");
+    String jsonNesting = lowercaseRequestParameter(request,"jsonNesting");
+    boolean displayParentName = lowercaseRequestParameter(request,"parentName") == null ? 
+    		true : lowercaseRequestParameter(request,"parentName").equals("false");
+    String jsonCallback = lowercaseRequestParameter(request,"jsCallback");
 
     // clean params
     if(jsonCallback != null){
@@ -165,20 +174,22 @@ public class OxPointsURI extends HttpServlet {
     }
     
     String output = "";
-    if(format != null && format.toLowerCase().equals("kml")){
-      response.setContentType("text/xml");
+    if(format.equals("kml")){
+      // Apache and the browser should handle content to based upon extension
+      response.setContentType("application/vnd.google-earth.kml+xml");
       
       KMLPoolTransformer transformer = new KMLPoolTransformer();
-      if(null != orderBy){
+      if(orderBy != null){
         String realOrderBy = getPropertyURI(orderBy);
         transformer.setOrderBy(realOrderBy);
       }
       transformer.setDisplayParentName(displayParentName);
       
       output = transformer.transform(pool);
-    } else if(format != null &&  format.toLowerCase().equals("json")){
+    } else if(format.equals("json")){
+      response.setContentType("text/plain");
       JSONPoolTransformer transformer = new JSONPoolTransformer();
-      if(null != jsonNesting){
+      if(jsonNesting != null){
         try{
           int level = Integer.parseInt(jsonNesting);
           transformer.setNesting(level);
@@ -192,24 +203,23 @@ public class OxPointsURI extends HttpServlet {
       output = (String) transformer.transform(pool);
       if(null != jsonCallback)
         output += ");";
-    } else if(format != null &&  format.toLowerCase().equals("geojson")){
+    } else if(format.equals("geojson")){
+      response.setContentType("text/plain");
       GeoJSONPoolTransfomer transformer = new GeoJSONPoolTransfomer();
-      if(null != orderBy){
+      if(orderBy != null){
         String realOrderBy = getPropertyURI(orderBy);
         transformer.setOrderBy(realOrderBy);
       }
       transformer.setDisplayParentName(displayParentName);
 
-      if(null != jsonCallback)
+      if(jsonCallback != null)
         output = jsonCallback + "(" + "\n";
       output += (String) transformer.transform(pool);
-      if(null != jsonCallback)
+      if(jsonCallback != null)
         output += ");";
-    } else {
+    } else if(format.equals("xml")){ // default
       // Apache and the browser should handle content to based upon extension
-      // however my browser is intent upon rendering it without passing to 
-      // Google Earth
-      response.setContentType("application/vnd.google-earth.kml+xml");
+      response.setContentType("text/xml");
       
       EntityPoolTransformer transformer;
       try {
@@ -218,6 +228,8 @@ public class OxPointsURI extends HttpServlet {
       } catch (UnsupportedFormatException e) {
         e.printStackTrace();
       }
+    } else { 
+      throw new RuntimeException("Bug: unexpected format :" + format + ":");
     }
       
 

@@ -1,0 +1,123 @@
+<?xml version="1.0"?>
+
+<document>
+
+  <properties>
+    <title>URI Interface rewrites</title>
+  </properties>
+
+  <body>
+
+
+<!--
+<p align="center">
+ <font size="-1"><i>
+This page last updated: $Date: 2006/11/23 09:17:23 $ $Author: timp $
+ </i></font>
+</p>
+-->
+  
+<!-- menu -->
+
+<section name=" URI Interface Arguments">
+<p>
+
+</p>
+
+<table>
+<caption>Arguments</caption>
+ <tr>
+  <th>
+  Argument
+  </th> 
+  <th>
+  Values
+  </th> 
+  <th>
+  Description
+  </th> 
+  <th>
+  Formats
+  </th> 
+  <th>
+  Notes
+  </th>
+ </tr>
+ <tr>
+  <th>
+  mode
+  </th> 
+  <td>
+  all
+  </td> 
+  <td>
+  whether we are expecting a list or an item returned
+  </td> 
+  <td>
+   <table>
+    <tr>
+     <td style="background-color:green">kml</td>
+     <td style="background-color:green">json</td>
+     <td style="background-color:green">geojson</td>
+     <td style="background-color:green">xml</td>
+    </tr>
+   </table>
+  </td> 
+  <td>
+  </td> 
+ </tr>
+ <tr>
+  <th>
+  </th> 
+  <td>
+  </td> 
+  <td>
+  </td> 
+  <td>
+  </td> 
+  <td>
+  </td> 
+ </tr>
+ <tr>
+  <th>
+  </th> 
+  <td>
+  </td> 
+  <td>
+  </td> 
+  <td>
+  </td> 
+  <td>
+  </td> 
+ </tr>
+ <tr>
+  <th>
+  </th> 
+  <td>
+  </td> 
+  <td>
+  </td> 
+  <td>
+  </td> 
+  <td>
+  </td> 
+ </tr>
+ <tr>
+  <th>
+  </th> 
+  <td>
+  </td> 
+  <td>
+  </td> 
+  <td>
+  </td> 
+  <td>
+  </td> 
+ </tr>
+</table>
+</section>
+</body>
+</document>
+
+
+

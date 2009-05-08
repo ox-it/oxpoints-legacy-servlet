@@ -148,6 +148,10 @@ public class OxPointsURI extends HttpServlet {
     
       pool = new GabotoEntityPool(gaboto, snapshot);
       for(String v : values){
+        if (property.endsWith("subsetOf")) 
+          v = "<http://ns.ox.ac.uk/namespaces/oxpoints/data/unit/" + v + ">";
+        System.err.println("Property:"+fullProperty);
+        System.err.println("Value:"+v);
         GabotoEntityPool p = snapshot.loadEntitiesWithProperty(fullProperty, v);
         for(GabotoEntity e : p.getEntities())
           pool.addEntity(e);
@@ -164,8 +168,9 @@ public class OxPointsURI extends HttpServlet {
       throw new IllegalArgumentException("'type' parameter missing");
     }
     type = "#" + type;
-    
+    boolean doneOne = false;
     for(String classURI : GabotoOntologyLookup.getRegisteredClassesAsURIs()){
+      System.err.println(classURI);
       if(classURI.endsWith(type)){
         GabotoEntityPoolConfiguration config = new GabotoEntityPoolConfiguration(snapshot);
         config.addAcceptedType(classURI);
@@ -176,10 +181,12 @@ public class OxPointsURI extends HttpServlet {
           throw new RuntimeException(e);
         }
         output(pool, request, response);
-        
+        doneOne = true;
         break;
       }
     }
+    if(!doneOne)
+      throw new RuntimeException("No, matching type found :" + type);
   }
 
   private String lowercaseRequestParameter(HttpServletRequest request, String name) { 
@@ -220,7 +227,7 @@ public class OxPointsURI extends HttpServlet {
         transformer.setOrderBy(getPropertyURI(orderBy));
       }
       transformer.setDisplayParentName(displayParentName);
-      
+
       output = transformer.transform(pool);
     } else if(format.equals("json")){
       response.setContentType("text/plain");
@@ -235,11 +242,10 @@ public class OxPointsURI extends HttpServlet {
         }
       }
 
-      if(jsCallback != null)
-        output = jsCallback + "(\n";
       output = (String)transformer.transform(pool);
       if(jsCallback != null)
-        output += ");";
+        output = jsCallback + "(" + output + ");";
+      System.err.println("Callback:"+jsCallback);
     } else if(format.equals("geojson")){
       response.setContentType("text/plain");
       GeoJSONPoolTransfomer transformer = new GeoJSONPoolTransfomer();
@@ -248,11 +254,9 @@ public class OxPointsURI extends HttpServlet {
       }
       transformer.setDisplayParentName(displayParentName);
 
-      if(jsCallback != null)
-        output = jsCallback + "(" + "\n";
       output += (String)transformer.transform(pool);
       if(jsCallback != null)
-        output += ");";
+        output = jsCallback + "(" + output + ");";
     } else if(format.equals("xml")){ // default
       response.setContentType("text/xml");
       

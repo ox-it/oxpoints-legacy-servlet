@@ -33,6 +33,8 @@ package uk.ac.ox.oucs.erewhon.uriinterface;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -136,6 +138,7 @@ public class OxPointsURI extends HttpServlet {
     }
     String fullProperty = getPropertyURI(property);
     
+    String arc = request.getParameter("arc");
     
     GabotoEntityPool pool;
     
@@ -153,11 +156,30 @@ public class OxPointsURI extends HttpServlet {
         System.err.println("Property:"+fullProperty);
         System.err.println("Value:"+v);
         GabotoEntityPool p = snapshot.loadEntitiesWithProperty(fullProperty, v);
-        for(GabotoEntity e : p.getEntities())
+        for(GabotoEntity e : p.getEntities()) { 
           pool.addEntity(e);
+          System.err.println("Adding:"+v);
+        }
       }
     }
-    
+    if (arc != null) { 
+      for (GabotoEntity e : pool.getEntities()) { 
+        Object o = e.getPropertyValue(getPropertyURI(arc));
+        if (o != null)  {
+          System.err.println("Got one" + o );
+          System.err.println("it is a " + o.getClass() );
+        }
+        
+        if (o instanceof HashSet) {
+          HashSet<GabotoEntity> h = (HashSet)o;
+          Iterator it = h.iterator();
+          for (GabotoEntity e2 : h) { 
+            pool.addEntity(e2);
+          }
+        }
+      }
+    }
+      
     output(pool, request, response);
   }
   
@@ -280,6 +302,7 @@ public class OxPointsURI extends HttpServlet {
   
   private String getPropertyURI(String property){
     for(String prefix : namespacePrefixes.keySet()){
+      System.err.println("Prop:" + property + ":" + prefix);
       if(property.startsWith(prefix))
         return namespacePrefixes.get(prefix) + property.substring(prefix.length());
     }

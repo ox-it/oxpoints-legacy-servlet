@@ -252,7 +252,7 @@ public class OxPointsURI extends HttpServlet {
 
       output = transformer.transform(pool);
     } else if(format.equals("json")){
-      response.setContentType("text/plain");
+      response.setContentType("text/javascript");
       JSONPoolTransformer transformer = new JSONPoolTransformer();
       String jsonNesting = lowercaseRequestParameter(request,"jsonNesting");
       if(jsonNesting != null){
@@ -269,7 +269,7 @@ public class OxPointsURI extends HttpServlet {
         output = jsCallback + "(" + output + ");";
       System.err.println("Callback:"+jsCallback);
     } else if(format.equals("geojson")){
-      response.setContentType("text/plain");
+      response.setContentType("text/javascript");
       GeoJSONPoolTransfomer transformer = new GeoJSONPoolTransfomer();
       if(orderBy != null){
         transformer.setOrderBy(getPropertyURI(orderBy));

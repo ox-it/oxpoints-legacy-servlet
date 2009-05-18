@@ -34,7 +34,6 @@ package uk.ac.ox.oucs.erewhon.uriinterface;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -172,7 +171,6 @@ public class OxPointsURI extends HttpServlet {
         
         if (o instanceof HashSet) {
           HashSet<GabotoEntity> h = (HashSet)o;
-          Iterator it = h.iterator();
           for (GabotoEntity e2 : h) { 
             pool.addEntity(e2);
           }

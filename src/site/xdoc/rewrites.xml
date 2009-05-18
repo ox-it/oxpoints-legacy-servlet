@@ -28,8 +28,8 @@ This page last updated: $Date: 2006/11/23 09:17:23 $ $Author: timp $
 <caption>Rewrites</caption>
  <tr>
  <td>
-    <a href="/oxpoints/oucs/oucs">
-    /oxpoints/oucs/oucs
+    <a href="/oxpoints/oucs/oucs.kml">
+    /oxpoints/oucs/oucs.kml
     </a>
   </td> 
  <td>
@@ -40,12 +40,12 @@ This page last updated: $Date: 2006/11/23 09:17:23 $ $Author: timp $
  </tr>
  <tr>
  <td>
-    <a href="/oxpoints/olis/BOD+Offsite">
- /oxpoints/olis/BOD+Offsite
+    <a href="/oxpoints/olis/BOD/kml">
+ /oxpoints/olis/BOD/kml
     </a>
  </td> 
  <td>
-    <a href="http://localhost:8080/OxPointsUriGui/OxPointsURI?property=oxp:hasOLISCode&amp;value=BOD+Offsite&amp;format=kml">
+    <a href="http://localhost:8080/OxPointsUriGui/OxPointsURI?property=oxp:hasOLISCode&amp;value=BOD&amp;format=kml">
    http://localhost:8080/OxPointsUriGui/OxPointsURI?property=oxp:hasOLISCode&amp;value=$1&amp;format=kml
     </a>
  </td>
@@ -64,12 +64,12 @@ This page last updated: $Date: 2006/11/23 09:17:23 $ $Author: timp $
  </tr>
  <tr>
  <td>
-    <a href="/oxpoints/olis/BOD+Offsite/kml">
+    <a href="/oxpoints/olis/BOD/kml">
    /oxpoints/olis/([^\/]+)/(.*)
     </a>
  </td> 
  <td>
-    <a href="http://localhost:8080/OxPointsUriGui/OxPointsURI?property=oxp:hasOLISCode&amp;jsCallback=oxpoints&amp;value=BOD+Offsite&amp;format=kml">
+    <a href="http://localhost:8080/OxPointsUriGui/OxPointsURI?property=oxp:hasOLISCode&amp;jsCallback=oxpoints&amp;value=BOD&amp;format=kml">
    http://localhost:8080/OxPointsUriGui/OxPointsURI?property=oxp:hasOLISCode&amp;jsCallback=oxpoints&amp;value=$1&amp;format=$2
     </a>
  </td>
@@ -89,19 +89,48 @@ This page last updated: $Date: 2006/11/23 09:17:23 $ $Author: timp $
  <tr>
  <td>
     <a href="/oxpoints/colleges/kml">
-   /oxpoints/colleges/(.*)
+   /oxpoints/colleges[\./](*)
     </a>
  </td> 
+ 
  <td>
     <a href="http://localhost:8080/OxPointsUriGui/OxPointsURI?mode=all&amp;type=College&amp;format=kml&amp;orderBy=dc:title">
    http://localhost:8080/OxPointsUriGui/OxPointsURI?mode=all&amp;type=College&amp;format=$1&amp;orderBy=dc:title
     </a>
  </td> 
  </tr>
+
  <tr>
  <td>
-    <a href="/oxpoints/College.kml">
-   /oxpoints/([^\.]+).kml
+    <a href="/oxpoints/libraries">
+   /oxpoints/libraries
+    </a>
+ </td> 
+ <td>
+    <a href="http://localhost:8080/OxPointsUriGui/OxPointsURI?mode=all&amp;type=Library&amp;format=kml&amp;orderBy=dc:title">
+   http://localhost:8080/OxPointsUriGui/OxPointsURI?mode=all&amp;type=Library&amp;format=kml&amp;orderBy=dc:title
+    </a>
+ </td> 
+ </tr>
+ <tr>
+ <td>
+    <a href="/oxpoints/libraries.kml">
+   /oxpoints/libraries[\./](*)
+    </a>
+ </td> 
+ 
+ <td>
+    <a href="http://localhost:8080/OxPointsUriGui/OxPointsURI?mode=all&amp;type=Library&amp;format=kml&amp;orderBy=dc:title">
+   http://localhost:8080/OxPointsUriGui/OxPointsURI?mode=all&amp;type=Library&amp;format=$1&amp;orderBy=dc:title
+    </a>
+ </td> 
+ </tr>
+
+
+ <tr>
+ <td>
+    <a href="/oxpoints/College.xml">
+   /oxpoints/([^\.]+).xml
     </a>
  </td> 
  <td>

@@ -68,50 +68,138 @@ This page last updated: $Date: 2006/11/23 09:17:23 $ $Author: timp $
  </tr>
  <tr>
   <th>
+  property
   </th> 
   <td>
+  eg oxp:hasOLISCode
   </td> 
   <td>
+  Abbreviated property name 
   </td> 
   <td>
+   <table>
+    <tr>
+     <td style="background-color:green">kml</td>
+     <td style="background-color:green">json</td>
+     <td style="background-color:green">geojson</td>
+     <td style="background-color:green">xml</td>
+    </tr>
+   </table>
+  </td> 
+  <td>
+  Name must exist in vocabulary
+  </td> 
+ </tr>
+ <tr>
+  <th>
+  value
+  </th> 
+  <td>
+  eg oucs
+  </td> 
+  <td>
+  Value of property to filter by
+  </td> 
+  <td>
+   <table>
+    <tr>
+     <td style="background-color:green">kml</td>
+     <td style="background-color:green">json</td>
+     <td style="background-color:green">geojson</td>
+     <td style="background-color:green">xml</td>
+    </tr>
+   </table>
   </td> 
   <td>
   </td> 
  </tr>
  <tr>
   <th>
+  format 
+  </th> 
+  <td>
+   <table>
+    <tr>
+     <td style="background-color:green">kml</td>
+     <td style="background-color:green">json</td>
+     <td style="background-color:green">geojson</td>
+     <td style="background-color:green">xml</td>
+    </tr>
+   </table>
+  </td> 
+  <td>
+  </td> 
+  <td>
+  </td> 
+  <td>
+  Defaults to xml
+  </td> 
+ </tr>
+ <tr>
+  <th>
+  type
   </th> 
   <td>
   </td> 
   <td>
   </td> 
   <td>
+   <table>
+    <tr>
+     <td style="background-color:green">kml</td>
+     <td style="background-color:green">json</td>
+     <td style="background-color:green">geojson</td>
+     <td style="background-color:green">xml</td>
+    </tr>
+   </table>
   </td> 
   <td>
   </td> 
  </tr>
  <tr>
   <th>
+  orderBy
   </th> 
   <td>
+  eg dc:title
   </td> 
   <td>
+  Field to order by 
   </td> 
   <td>
+   <table>
+    <tr>
+     <td style="background-color:green">kml</td>
+     <td style="background-color:green">xml</td>
+    </tr>
+   </table>
   </td> 
   <td>
+  Only if format can accept ordering.
   </td> 
  </tr>
  <tr>
   <th>
+  arc
   </th> 
   <td>
+  eg oxp:occupies
   </td> 
   <td>
+  For selected entity, arcs to follow 
   </td> 
   <td>
+   <table>
+    <tr>
+     <td style="background-color:green">kml</td>
+     <td style="background-color:green">json</td>
+     <td style="background-color:green">geojson</td>
+     <td style="background-color:green">xml</td>
+    </tr>
+   </table>
   </td> 
   <td>
+  Selected enity is distinguished, sub entities are in a folder
   </td> 
  </tr>
 </table>

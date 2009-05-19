@@ -17,5 +17,10 @@
     <url-pattern>/OxPointsURI</url-pattern>
   </servlet-mapping>
   
+  <servlet-mapping>
+    <servlet-name>OxPointsURI</servlet-name>
+    <url-pattern>/OxPointsURI/*</url-pattern>
+  </servlet-mapping>
+  
   
 </web-app>

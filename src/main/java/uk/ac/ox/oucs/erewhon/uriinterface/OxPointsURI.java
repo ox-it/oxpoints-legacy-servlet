@@ -52,6 +52,7 @@ import org.oucs.gaboto.transformation.json.GeoJSONPoolTransfomer;
 import org.oucs.gaboto.transformation.json.JSONPoolTransformer;
 import org.oucs.gaboto.transformation.kml.KMLPoolTransformer;
 import org.oucs.gaboto.exceptions.EntityPoolInvalidConfigurationException;
+import org.oucs.gaboto.exceptions.ResourceDoesNotExistException;
 import org.oucs.gaboto.exceptions.UnsupportedFormatException;
 import org.oucs.gaboto.model.Gaboto;
 import org.oucs.gaboto.model.GabotoFactory;
@@ -119,16 +120,43 @@ public class OxPointsURI extends HttpServlet {
    */
   @Override
   public void doGet(HttpServletRequest request, HttpServletResponse response){
-    String mode = request.getParameter("mode");
-    if(mode == null)
-      processDefaultMode(request, response);
-    else if(mode.equals("all"))
-      doAllOfType(request, response);
-    else 
-      throw new IllegalArgumentException("Unexpected 'mode' parameter: " + mode);
+    String pathInfo = request.getPathInfo();
+    if (pathInfo != null) {
+      if (pathInfo.startsWith("/id/")) { 
+        pathInfo = pathInfo.substring(4);
+        int dotPosition = pathInfo.indexOf('.');
+        if (dotPosition == -1) 
+          throw new IllegalArgumentException("No format type in  " + pathInfo);
+        String id = pathInfo.substring(0, dotPosition);
+        String format = pathInfo.substring(dotPosition + 1);
+        //System.err.println(pathInfo);
+        //System.err.println(id);
+        //System.err.println(format);
+        String uri = "http://ns.ox.ac.uk/namespaces/oxpoints/data/unit/" + id;
+        GabotoEntityPool pool = new GabotoEntityPool(gaboto, snapshot);
+        try {
+          pool.addEntity(snapshot.loadEntity(uri));
+        } catch (ResourceDoesNotExistException e) {
+          throw new RuntimeException("Resouce not found with uri " + uri, e);
+        }
+        output(pool, request, response, format);
+
+      } else  
+        throw new IllegalArgumentException("Unexpected path info : " + pathInfo);
+    } else { 
+      String format = lowercaseRequestParameter(request,"format");
+      if (format == null) format = "xml"; 
+      String mode = request.getParameter("mode");
+      if(mode == null)
+        processDefaultMode(request, response, format);
+      else if(mode.equals("all"))
+        doAllOfType(request, response, format);
+      else 
+        throw new IllegalArgumentException("Unexpected 'mode' parameter: " + mode);
+    } 
   }
 
-  private void processDefaultMode(HttpServletRequest request, HttpServletResponse response) {
+  private void processDefaultMode(HttpServletRequest request, HttpServletResponse response, String format) {
         
     // load parameters
     String property = request.getParameter("property");
@@ -178,10 +206,10 @@ public class OxPointsURI extends HttpServlet {
       }
     }
       
-    output(pool, request, response);
+    output(pool, request, response, format);
   }
   
-  private void doAllOfType(HttpServletRequest request, HttpServletResponse response) {
+  private void doAllOfType(HttpServletRequest request, HttpServletResponse response, String format) {
     
     String type = request.getParameter("type");
     if (type == null) { 
@@ -200,7 +228,7 @@ public class OxPointsURI extends HttpServlet {
         } catch (EntityPoolInvalidConfigurationException e) {
           throw new RuntimeException(e);
         }
-        output(pool, request, response);
+        output(pool, request, response, format);
         doneOne = true;
         break;
       }
@@ -216,9 +244,7 @@ public class OxPointsURI extends HttpServlet {
     return p;
   }
   
-  private void output(GabotoEntityPool pool, HttpServletRequest request, HttpServletResponse response){
-    String format = lowercaseRequestParameter(request,"format");
-    if (format == null) format = "xml"; 
+  private void output(GabotoEntityPool pool, HttpServletRequest request, HttpServletResponse response, String format){
     String orderBy = lowercaseRequestParameter(request,"orderBy");
 
     String displayParentNameStringValue = lowercaseRequestParameter(request,"parentName");

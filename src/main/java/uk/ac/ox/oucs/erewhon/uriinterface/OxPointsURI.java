@@ -33,7 +33,6 @@ package uk.ac.ox.oucs.erewhon.uriinterface;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collection;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -281,7 +280,7 @@ public class OxPointsURI extends HttpServlet {
         }
       }
 
-      output = (String)transformer.transform(pool);
+      output = transformer.transform(pool);
       if(jsCallback != null)
         output = jsCallback + "(" + output + ");";
       System.err.println("Callback:"+jsCallback);
@@ -293,7 +292,7 @@ public class OxPointsURI extends HttpServlet {
       }
       transformer.setDisplayParentName(displayParentName);
 
-      output += (String)transformer.transform(pool);
+      output += transformer.transform(pool);
       if(jsCallback != null)
         output = jsCallback + "(" + output + ");";
     } else if(format.equals("xml")){ // default

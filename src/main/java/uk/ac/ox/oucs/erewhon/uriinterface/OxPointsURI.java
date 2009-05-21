@@ -283,10 +283,13 @@ public class OxPointsURI extends HttpServlet {
       output = transformer.transform(pool);
       if(jsCallback != null)
         output = jsCallback + "(" + output + ");";
-      System.err.println("Callback:"+jsCallback);
     } else if(format.equals("geojson")){
       response.setContentType("text/javascript");
       GeoJSONPoolTransfomer transformer = new GeoJSONPoolTransfomer();
+      if (arc != null) { 
+        transformer.addEntityFolderType("http://ns.ox.ac.uk/namespace/oxpoints/2009/02/owl#College", 
+            "http://ns.ox.ac.uk/namespace/oxpoints/2009/02/owl#occupies");
+      }
       if(orderBy != null){
         transformer.setOrderBy(getPropertyURI(orderBy));
       }

@@ -33,7 +33,7 @@ package uk.ac.ox.oucs.erewhon.uriinterface;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashSet;
+import java.util.Collection;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -89,16 +89,19 @@ public class OxPointsURI extends HttpServlet {
   private static Gaboto gaboto;
   
   private static GabotoSnapshot snapshot;
-
+ 
+  private static GabotoConfiguration config;
   
+  String arc = null;
   
   public void init(){
     // load Gaboto
     try {
-      GabotoLibrary.init(GabotoConfiguration.fromConfigFile());
+      config = GabotoConfiguration.fromConfigFile();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
+    GabotoLibrary.init(config);
     gaboto = GabotoFactory.getEmptyInMemoryGaboto();
     
     gaboto.read(getResourceOrDie("graphs.rdf"), getResourceOrDie("cdg.rdf"));
@@ -115,36 +118,40 @@ public class OxPointsURI extends HttpServlet {
       throw new NullPointerException("File " + resourceName + " cannot be loaded");
     return is;
   }
+  
   /**
    * 
    */
   @Override
   public void doGet(HttpServletRequest request, HttpServletResponse response){
     String pathInfo = request.getPathInfo();
+    String format = null;
     if (pathInfo != null) {
       if (pathInfo.startsWith("/id/")) { 
+        
+        
         pathInfo = pathInfo.substring(4);
         int dotPosition = pathInfo.indexOf('.');
-        if (dotPosition == -1) 
-          throw new IllegalArgumentException("No format type in  " + pathInfo);
-        String id = pathInfo.substring(0, dotPosition);
-        String format = pathInfo.substring(dotPosition + 1);
-        //System.err.println(pathInfo);
-        //System.err.println(id);
-        //System.err.println(format);
-        String uri = "http://ns.ox.ac.uk/namespaces/oxpoints/data/unit/" + id;
+        String id = null;
+        if (dotPosition == -1) {
+          format = "xml"; 
+          id = pathInfo;
+        } else { 
+          format = pathInfo.substring(dotPosition + 1);
+          id = pathInfo.substring(0, dotPosition);
+        }
+        String uri = config.getNSData() + id;
         GabotoEntityPool pool = new GabotoEntityPool(gaboto, snapshot);
         try {
           pool.addEntity(snapshot.loadEntity(uri));
         } catch (ResourceDoesNotExistException e) {
-          throw new RuntimeException("Resouce not found with uri " + uri, e);
+          throw new RuntimeException("Resource not found with uri " + uri, e);
         }
         output(pool, request, response, format);
-
       } else  
         throw new IllegalArgumentException("Unexpected path info : " + pathInfo);
     } else { 
-      String format = lowercaseRequestParameter(request,"format");
+      format = lowercaseRequestParameter(request,"format");
       if (format == null) format = "xml"; 
       String mode = request.getParameter("mode");
       if(mode == null)
@@ -165,7 +172,7 @@ public class OxPointsURI extends HttpServlet {
     }
     String fullProperty = getPropertyURI(property);
     
-    String arc = request.getParameter("arc");
+    arc = request.getParameter("arc");
     
     GabotoEntityPool pool;
     
@@ -178,30 +185,12 @@ public class OxPointsURI extends HttpServlet {
     
       pool = new GabotoEntityPool(gaboto, snapshot);
       for(String v : values){
-        if (property.endsWith("subsetOf")) 
-          v = "<http://ns.ox.ac.uk/namespaces/oxpoints/data/unit/" + v + ">";
         System.err.println("Property:"+fullProperty);
         System.err.println("Value:"+v);
         GabotoEntityPool p = snapshot.loadEntitiesWithProperty(fullProperty, v);
         for(GabotoEntity e : p.getEntities()) { 
           pool.addEntity(e);
           System.err.println("Adding:"+v);
-        }
-      }
-    }
-    if (arc != null) { 
-      for (GabotoEntity e : pool.getEntities()) { 
-        Object o = e.getPropertyValue(getPropertyURI(arc));
-        if (o != null)  {
-          System.err.println("Got one" + o );
-          System.err.println("it is a " + o.getClass() );
-        }
-        
-        if (o instanceof HashSet) {
-          HashSet<GabotoEntity> h = (HashSet)o;
-          for (GabotoEntity e2 : h) { 
-            pool.addEntity(e2);
-          }
         }
       }
     }
@@ -269,6 +258,10 @@ public class OxPointsURI extends HttpServlet {
       response.setContentType("application/vnd.google-earth.kml+xml");
       
       KMLPoolTransformer transformer = new KMLPoolTransformer();
+      if (arc != null) { 
+        transformer.addEntityFolderType("http://ns.ox.ac.uk/namespace/oxpoints/2009/02/owl#College", 
+            "http://ns.ox.ac.uk/namespace/oxpoints/2009/02/owl#occupies");
+      }
       if(orderBy != null){
         transformer.setOrderBy(getPropertyURI(orderBy));
       }

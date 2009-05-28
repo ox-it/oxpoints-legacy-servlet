@@ -33,6 +33,8 @@ package uk.ac.ox.oucs.erewhon.uriinterface;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -91,6 +93,8 @@ public class OxPointsURI extends HttpServlet {
  
   private static GabotoConfiguration config;
   
+  private static Calendar startTime;
+  
   String arc = null;
   
   public void init(){
@@ -106,7 +110,9 @@ public class OxPointsURI extends HttpServlet {
     gaboto.read(getResourceOrDie("graphs.rdf"), getResourceOrDie("cdg.rdf"));
     gaboto.recreateTimeDimensionIndex();
     
-    snapshot = gaboto.getSnapshot(TimeInstant.now());
+    startTime = Calendar.getInstance();
+    
+    snapshot = gaboto.getSnapshot(TimeInstant.from(startTime));
     
   }
   
@@ -126,7 +132,13 @@ public class OxPointsURI extends HttpServlet {
     String pathInfo = request.getPathInfo();
     String format = null;
     if (pathInfo != null) {
-      if (pathInfo.startsWith("/id/")) { 
+      if (pathInfo.startsWith("/timestamp")) { 
+        try {
+          response.getWriter().write(new Long(startTime.getTimeInMillis()).toString());
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      } else if (pathInfo.startsWith("/id/")) { 
         
         
         pathInfo = pathInfo.substring(4);
@@ -289,7 +301,7 @@ public class OxPointsURI extends HttpServlet {
       if (arc != null) { 
         transformer.addEntityFolderType("http://ns.ox.ac.uk/namespace/oxpoints/2009/02/owl#College", 
             "http://ns.ox.ac.uk/namespace/oxpoints/2009/02/owl#occupies");
-      }
+      }// oxpq
       if(orderBy != null){
         transformer.setOrderBy(getPropertyURI(orderBy));
       }
@@ -328,4 +340,5 @@ public class OxPointsURI extends HttpServlet {
     throw new IllegalArgumentException("Found no URI matching property " + property);
   }
 
+  
 }

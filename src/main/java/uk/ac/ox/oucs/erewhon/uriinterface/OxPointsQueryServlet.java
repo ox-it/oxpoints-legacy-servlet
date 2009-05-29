@@ -34,7 +34,6 @@ package uk.ac.ox.oucs.erewhon.uriinterface;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -75,7 +74,7 @@ import com.hp.hpl.jena.vocabulary.DC;
  * 
  */
 
-public class OxPointsURI extends HttpServlet {
+public class OxPointsQueryServlet extends HttpServlet {
 
   private static final long serialVersionUID = 4155078999145248554L;
 

@@ -56,10 +56,10 @@ This page last updated: $Date: 2006/11/23 09:17:23 $ $Author: timp $
   <td>
    <table>
     <tr>
-     <td style="background-color:green">kml</td>
-     <td style="background-color:green">json</td>
-     <td style="background-color:green">geojson</td>
-     <td style="background-color:green">xml</td>
+     <td class="green">kml</td>
+     <td class="green">json</td>
+     <td class="green">geojson</td>
+     <td class="green">xml</td>
     </tr>
    </table>
   </td> 

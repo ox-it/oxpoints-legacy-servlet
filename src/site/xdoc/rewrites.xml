@@ -21,52 +21,6 @@ This page last updated: $Date: 2006/11/23 09:17:23 $ $Author: timp $
 
 <section name=" URI Interface ">
 <p>
- RewriteRule "^/oxpoints/(Carpark|College|Department|Library|Museum|Unit)/([a-z\|]+)/([a-z]+)\.(json|geojson|kml|xml)$" "http://localhost:8080/OxPointsUriGui/OxPointsURI?property=oxp:hasOUCSCode&value=$2&format=$4&orderBy=dc:title&arc=oxp:$3" [P]
-
-# $Type/$code/$arc for olis codes
- RewriteRule "^/oxpoints/(Carpark|College|Department|Library|Museum|Unit)/([A-Z0-9%\+\|]+)/([a-z]+)\.(json|geojson|kml|xml)$" "http://localhost:8080/OxPointsUriGui/OxPointsURI?property=oxp:hasOLISCode&value=$2&format=$4&orderBy=dc:title&arc=oxp:$3" [P]
-
-
-
-# plain $Type
-RewriteRule "^/oxpoints/(Carpark|College|Department|Library|Museum|Unit)\.(json|geojson|kml|xml)$" "http://localhost:8080/OxPointsUriGui/OxPointsURI?mode=all&type=$1&format=$2&orderBy=dc:title" [P]
-# Other types
-RewriteRule "^/oxpoints/(Carpark|College|Department|Library|Museum|Unit)\.([a-z0-9]*)$"            "http://localhost/cgi-bin/oxpoints.pl?mode=all&type=$1&format=$2&orderBy=dc:title" [P,L]
-
-# plain $Type/$code where code is lowercase (ie OUCS)
-RewriteRule "^/oxpoints/(Carpark|College|Department|Library|Museum|Unit)/([a-z\|]+)\.(json|geojson|kml|xml)$" "http://localhost:8080/OxPointsUriGui/OxPointsURI?property=oxp:hasOUCSCode&value=$2&format=$3&orderBy=dc:title" [P]
-RewriteRule "^/oxpoints/(Carpark|College|Department|Library|Museum|Unit)/([a-z\|]+)\.([a-z0-9])$" "http://localhost/cgi-bin/oxpoints.pl?property=oxp:hasOUCSCode&value=$2&format=$3&orderBy=dc:title" [P,L]
-# plain $Type/$code where code is uppercase (ie OLIS)
- RewriteRule "^/oxpoints/(Carpark|College|Department|Library|Museum|Unit)/([^\.]+)\.(json|geojson|kml|xml)$" "http://localhost:8080/OxPointsUriGui/OxPointsURI?property=oxp:hasOLISCode&value=$2&format=$3&orderBy=dc:title" [P]
- RewriteRule "^/oxpoints/(Carpark|College|Department|Library|Museum|Unit)/([^\.]+)\.([a-z0-9]*)$" "http://localhost/cgi-bin/oxpoints.pl?property=oxp:hasOLISCode&value=$2&format=$3&orderBy=dc:title" [P,L]
-
-# special case for oucs/$code
- RewriteRule "^/oxpoints/oucs/([A-z0-9%\+]+)$"                           "http://localhost:8080/OxPointsUriGui/OxPointsURI?property=oxp:hasOUCSCode&jsCallback=oxpoints&value=$1&format=kml" [P]
-
- RewriteRule "^/oxpoints/oucs/([^\/\.]+)[\/\.](json|geojson|kml|xml)$"   "http://localhost:8080/OxPointsUriGui/OxPointsURI?property=oxp:hasOUCSCode&jsCallback=oxpoints&value=$1&format=$2" [P]
-
- RewriteRule "^/oxpoints/oucs/([^\/]+)[\/\.](.*)$"                       "http://localhost/cgi-bin/oxpoints.pl?property=oxp:hasOUCSCode&jsCallback=oxpoints&value=$1&format=$2" [P,L]
-
-# special case for olis/$code
- RewriteRule "^/oxpoints/olis/([A-z0-9%\+]+)$"                           "http://localhost:8080/OxPointsUriGui/OxPointsURI?property=oxp:hasOLISCode&jsCallback=oxpoints&value=$1&format=kml" [P]
-
- RewriteRule "^/oxpoints/olis/([^\/]+)[\/\.](json|geojson|kml|xml)$" "http://localhost:8080/OxPointsUriGui/OxPointsURI?property=oxp:hasOLISCode&jsCallback=oxpoints&value=$1&format=$2" [P]
-
- RewriteRule "^/oxpoints/olis/([^\/]+)[\/\.](.*)$"                       "http://localhost/cgi-bin/oxpoints.pl?property=oxp:hasOLISCode&jsCallback=oxpoints&value=$1&format=$2" [P]
-
-
-
-# short cuts for each type
- RewriteRule "^/oxpoints/carparks[\/\.](.+)$"          "http://localhost:8080/OxPointsUriGui/OxPointsURI?mode=all&type=Carpark&format=$1&orderBy=dc:title" [P] 
- RewriteRule "^/oxpoints/colleges[\/\.](.+)$"          "http://localhost:8080/OxPointsUriGui/OxPointsURI?mode=all&type=College&format=$1&orderBy=dc:title" [P] 
- RewriteRule "^/oxpoints/departments[\/\.](.+)$"       "http://localhost:8080/OxPointsUriGui/OxPointsURI?mode=all&type=Department&format=$1&orderBy=dc:title" [P] 
- RewriteRule "^/oxpoints/libraries[\/\.](.+)$"         "http://localhost:8080/OxPointsUriGui/OxPointsURI?mode=all&type=Library&format=$1&orderBy=dc:title" [P] 
- RewriteRule "^/oxpoints/museums[\/\.](.+)$"           "http://localhost:8080/OxPointsUriGui/OxPointsURI?mode=all&type=Museum&format=$1&orderBy=dc:title" [P] 
- RewriteRule "^/oxpoints/units[\/\.](.+)$"             "http://localhost:8080/OxPointsUriGui/OxPointsURI?mode=all&type=Unit&format=$1&orderBy=dc:title" [P] 
-
-# id field?
-RewriteRule "^/oxpoints/id/([a-z\|]+)\.(json|geojson|kml|xml)$" "http://localhost:8080/OxPointsUriGui/OxPointsURI?property=oxp:id&value=$1&format=$2&orderBy=dc:title" [P]
- 
 
 </p>
 
@@ -185,6 +139,76 @@ RewriteRule "^/oxpoints/id/([a-z\|]+)\.(json|geojson|kml|xml)$" "http://localhos
     </a>
  </td> 
  </tr>
+ <!--
+================================================
+-->
+ <tr>
+ <td>
+    <a href="/oxpoints/Department/oucs.xml">
+   "^/oxpoints/(Carpark|College|Department|Library|Museum|Unit)/([a-z\|]+)/([a-z]+)\.(json|geojson|kml|xml)$"
+    </a>
+ </td> 
+ <td>
+    <a href=
+   "http://oucs-timp.oucs.ox.ac.uk:8080/OxPointsUriGui/OxPointsURI?property=oxp:hasOUCSCode&amp;value=oucs&amp;format=xml&amp;orderBy=dc:title&amp;arc=oxp:occupies">
+   "http://localhost:8080/OxPointsUriGui/OxPointsURI?property=oxp:hasOUCSCode&amp;value=$2&amp;format=$4&amp;orderBy=dc:title&amp;arc=oxp:$3"
+    </a>
+ </td> 
+ </tr>
+<!-- 
+ RewriteRule "^/oxpoints$" "http://www.oucs.ox.ac.uk/oxpoints/" 
+ RewriteRule "^/oxpoints/$" "http://www.oucs.ox.ac.uk/oxpoints/" 
+
+# $Type/$code/$arc for oucs codes
+ RewriteRule "^/oxpoints/(Carpark|College|Department|Library|Museum|Unit)/([^/]+)/([a-z_]+)\.(json|geojson|kml|xml)$" "http://localhost:8080/OxPointsUriGui/OxPointsURI?property=oxp:hasOUCSCode&value=$2&format=$4&jsCallback=oxpoints&orderBy=dc:title&arc=oxp:$3" [P]
+
+# $Type/$code/$arc for olis codes
+ RewriteRule "^/oxpoints/(Carpark|College|Department|Library|Museum|Unit)/([^/]+)/([a-z_]+)\.(json|geojson|kml|xml)$" "http://localhost:8080/OxPointsUriGui/OxPointsURI?property=oxp:hasOLISCode&value=$2&format=$4&jsCallback=oxpoints&orderBy=dc:title&arc=oxp:$3" [P]
+
+# plain $Type
+RewriteRule "^/oxpoints/(Carpark|College|Department|Library|Museum|Unit)\.(json|geojson|kml|xml)$" "http://localhost:8080/OxPointsUriGui/OxPointsURI?mode=all&type=$1&format=$2&jsCallback=oxpoints&orderBy=dc:title" [P]
+# Other types
+RewriteRule "^/oxpoints/(Carpark|College|Department|Library|Museum|Unit)\.([a-z0-9]*)$"            "http://localhost/cgi-bin/oxpoints.pl?mode=all&type=$1&format=$2&jsCallback=oxpoints&orderBy=dc:title" [P,L]
+
+# plain $Type/$code where code is lowercase (ie OUCS)
+RewriteRule "^/oxpoints/(Carpark|College|Department|Library|Museum|Unit)/([a-z\|]+)\.(json|geojson|kml|xml)$" "http://localhost:8080/OxPointsUriGui/OxPointsURI?property=oxp:hasOUCSCode&value=$2&format=$3&jsCallback=oxpoints&orderBy=dc:title" [P]
+RewriteRule "^/oxpoints/(Carpark|College|Department|Library|Museum|Unit)/([a-z\|]+)\.([a-z0-9])$" "http://localhost/cgi-bin/oxpoints.pl?property=oxp:hasOUCSCode&value=$2&format=$3&jsCallback=oxpoints&orderBy=dc:title" [P,L]
+# plain $Type/$code where code is uppercase (ie OLIS)
+ RewriteRule "^/oxpoints/(Carpark|College|Department|Library|Museum|Unit)/(.+)\.(json|geojson|kml|xml)$" "http://localhost:8080/OxPointsUriGui/OxPointsURI?property=oxp:hasOLISCode&value=$2&format=$3&jsCallback=oxpoints&orderBy=dc:title" [P]
+ RewriteRule "^/oxpoints/(Carpark|College|Department|Library|Museum|Unit)/([^\.]+)\.([a-z0-9]*)$" "http://localhost/cgi-bin/oxpoints.pl?property=oxp:hasOLISCode&value=$2&format=$3&jsCallback=oxpoints&orderBy=dc:title" [P,L]
+
+# id
+ RewriteRule "^/oxpoints/id/([A-z0-9]+)\.(json|geojson|kml|xml)$" "http://localhost:8080/OxPointsUriGui/OxPointsURI/id/$1.$2" [P]
+ RewriteRule "^/oxpoints/id/([A-z0-9]+)" "http://localhost:8080/OxPointsUriGui/OxPointsURI/id/$1" [P]
+
+# oucs/$code
+ RewriteRule "^/oxpoints/oucs/([A-z0-9_]+)$"                           "http://localhost:8080/OxPointsUriGui/OxPointsURI?property=oxp:hasOUCSCode&jsCallback=oxpoints&value=$1&format=xml" [P]
+
+
+ RewriteRule "^/oxpoints/oucs/([^\/]+)/([^.]+)\.(json|geojson|kml|xml)$"   "http://localhost:8080/OxPointsUriGui/OxPointsURI?property=oxp:hasOUCSCode&jsCallback=oxpoints&value=$1&format=$3&arc=$2" [P]
+
+ RewriteRule "^/oxpoints/oucs/([^.]+)\.(json|geojson|kml|xml)$"   "http://localhost:8080/OxPointsUriGui/OxPointsURI?property=oxp:hasOUCSCode&jsCallback=oxpoints&value=$1&format=$2" [P]
+# olis/$code
+ RewriteRule "^/oxpoints/olis/([A-z0-9_]+)$"                           "http://localhost:8080/OxPointsUriGui/OxPointsURI?property=oxp:hasOLISCode&jsCallback=oxpoints&value=$1&format=xml" [P]
+
+ RewriteRule "^/oxpoints/olis/([^\/]+)/([^.]+)\.(json|geojson|kml|xml)$"   "http://localhost:8080/OxPointsUriGui/OxPointsURI?property=oxp:hasOLISCode&jsCallback=oxpoints&value=$1&format=$3&arc=$2" [P]
+ RewriteRule "^/oxpoints/olis/([^.]+)\.(json|geojson|kml|xml)$"   "http://localhost:8080/OxPointsUriGui/OxPointsURI?property=oxp:hasOLISCode&jsCallback=oxpoints&value=$1&format=$2" [P]
+
+
+# short cuts for each type
+ RewriteRule "^/oxpoints/carparks[\/\.](.+)$"          "http://localhost:8080/OxPointsUriGui/OxPointsURI?mode=all&type=Carpark&format=$1&jsCallback=oxpoints&orderBy=dc:title" [P] 
+ RewriteRule "^/oxpoints/colleges[\/\.](.+)$"          "http://localhost:8080/OxPointsUriGui/OxPointsURI?mode=all&type=College&format=$1&jsCallback=oxpoints&orderBy=dc:title" [P] 
+ RewriteRule "^/oxpoints/departments[\/\.](.+)$"       "http://localhost:8080/OxPointsUriGui/OxPointsURI?mode=all&type=Department&format=$1&jsCallback=oxpoints&orderBy=dc:title" [P] 
+ RewriteRule "^/oxpoints/libraries[\/\.](.+)$"         "http://localhost:8080/OxPointsUriGui/OxPointsURI?mode=all&type=Library&format=$1&jsCallback=oxpoints&orderBy=dc:title" [P] 
+ RewriteRule "^/oxpoints/museums[\/\.](.+)$"           "http://localhost:8080/OxPointsUriGui/OxPointsURI?mode=all&type=Museum&format=$1&jsCallback=oxpoints&orderBy=dc:title" [P] 
+ RewriteRule "^/oxpoints/units[\/\.](.+)$"             "http://localhost:8080/OxPointsUriGui/OxPointsURI?mode=all&type=Unit&format=$1&jsCallback=oxpoints&orderBy=dc:title" [P] 
+
+# id field?
+RewriteRule "^/oxpoints/id/([0-9abcdef]+)\.(json|geojson|kml|xml)$" "http://localhost:8080/OxPointsUriGui/OxPointsURI/id/$1.$2" [P]
+ 
+ 
+-->
+ 
 </table>
 </section>
 </body>

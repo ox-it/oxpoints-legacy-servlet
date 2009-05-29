@@ -8,18 +8,27 @@
   
     
   <servlet>
-    <servlet-name>OxPointsURI</servlet-name>
-    <servlet-class>uk.ac.ox.oucs.erewhon.uriinterface.OxPointsURI</servlet-class>
+    <servlet-name>OxPointsQueryServlet</servlet-name>
+    <servlet-class>uk.ac.ox.oucs.erewhon.uriinterface.OxPointsQueryServlet</servlet-class>
   </servlet>
 
   <servlet-mapping>
-    <servlet-name>OxPointsURI</servlet-name>
-    <url-pattern>/OxPointsURI</url-pattern>
+    <servlet-name>OxPointsQueryServlet</servlet-name>
+    <url-pattern>/OxPQ</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>OxPointsQueryServlet</servlet-name>
+    <url-pattern>/OxPQ/*</url-pattern>
   </servlet-mapping>
   
   <servlet-mapping>
-    <servlet-name>OxPointsURI</servlet-name>
-    <url-pattern>/OxPointsURI/*</url-pattern>
+    <servlet-name>OxPointsQueryServlet</servlet-name>
+    <url-pattern>burt</url-pattern>
+  </servlet-mapping>
+  
+  <servlet-mapping>
+    <servlet-name>OxPointsQueryServlet</servlet-name>
+    <url-pattern>/burt</url-pattern>
   </servlet-mapping>
   
   

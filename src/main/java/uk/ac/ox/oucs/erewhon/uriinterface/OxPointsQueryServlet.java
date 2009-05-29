@@ -294,7 +294,7 @@ public class OxPointsQueryServlet extends HttpServlet {
       output = transformer.transform(pool);
       if(jsCallback != null)
         output = jsCallback + "(" + output + ");";
-    } else if(format.equals("geojson")){
+    } else if(format.equals("gjson")){
       response.setContentType("text/javascript");
       GeoJSONPoolTransfomer transformer = new GeoJSONPoolTransfomer();
       if (arc != null) { 

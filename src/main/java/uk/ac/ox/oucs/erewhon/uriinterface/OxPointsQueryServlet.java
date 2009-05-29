@@ -71,7 +71,13 @@ import com.hp.hpl.jena.vocabulary.DC;
  * A servlet to interrogate the OxPoints data.
  * 
  * Try invoking with 
- * http://127.0.0.1:8080/OxPointsUriGui/OxPointsURI?property=oxp:hasOUCSCode&value=oucs&format=kml
+ * http://127.0.0.1:8080/oxp/OxPointsQueryServlet?property=oxp:hasOUCSCode&value=oucs&format=kml
+ * 
+ *  Slashes are like dots in a method invocation. 
+ *  
+ *  Format is a special case.
+ *  
+ *  Parameters are used for qualifers which do not effect the number of entities in the the pool. 
  * 
  */
 
@@ -135,8 +141,8 @@ public class OxPointsQueryServlet extends HttpServlet {
       format = pathInfo.substring(dotPosition + 1);
     }    
   }
+  
   /**
-   * 
    */
   @Override
   public void doGet(HttpServletRequest request, HttpServletResponse response){

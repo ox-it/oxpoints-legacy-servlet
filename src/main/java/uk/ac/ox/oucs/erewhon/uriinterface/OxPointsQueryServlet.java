@@ -41,6 +41,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.log4j.Logger;
 import org.oucs.gaboto.GabotoConfiguration;
 import org.oucs.gaboto.GabotoLibrary;
 import org.oucs.gaboto.entities.GabotoEntity;
@@ -77,6 +78,7 @@ import com.hp.hpl.jena.vocabulary.DC;
 public class OxPointsQueryServlet extends HttpServlet {
 
   private static final long serialVersionUID = 4155078999145248554L;
+  private static Logger logger = Logger.getLogger(OxPointsQueryServlet.class.getName());
 
   static Map<String,String> namespacePrefixes = new TreeMap<String, String>();
   {
@@ -95,6 +97,8 @@ public class OxPointsQueryServlet extends HttpServlet {
   private static Calendar startTime;
   
   String arc = null;
+  String format = null;
+  String orderBy = null;
   
   public void init(){
     // load Gaboto
@@ -123,32 +127,39 @@ public class OxPointsQueryServlet extends HttpServlet {
     return is;
   }
   
+  private void setFormatFromPathInfo(String pathInfo) { 
+    int dotPosition = pathInfo.indexOf('.');
+    if (dotPosition == -1) {
+      format = "xml"; 
+    } else { 
+      format = pathInfo.substring(dotPosition + 1);
+    }    
+  }
   /**
    * 
    */
   @Override
   public void doGet(HttpServletRequest request, HttpServletResponse response){
     String pathInfo = request.getPathInfo();
-    String format = null;
+    logger.debug("hi");
     if (pathInfo != null) {
+      setFormatFromPathInfo(pathInfo);
       if (pathInfo.startsWith("/timestamp")) { 
         try {
           response.getWriter().write(new Long(startTime.getTimeInMillis()).toString());
         } catch (IOException e) {
           throw new RuntimeException(e);
         }
+      } else if (pathInfo.startsWith("/all")) { 
+        output(GabotoEntityPool.createFrom(snapshot), request, response, format);
       } else if (pathInfo.startsWith("/id/")) { 
         
-        
-        pathInfo = pathInfo.substring(4);
         int dotPosition = pathInfo.indexOf('.');
         String id = null;
         if (dotPosition == -1) {
-          format = "xml"; 
           id = pathInfo;
         } else { 
-          format = pathInfo.substring(dotPosition + 1);
-          id = pathInfo.substring(0, dotPosition);
+          id = pathInfo.substring(4, dotPosition);
         }
         String uri = config.getNSData() + id;
         GabotoEntityPool pool = new GabotoEntityPool(gaboto, snapshot);
@@ -244,7 +255,7 @@ public class OxPointsQueryServlet extends HttpServlet {
   }
   
   private void output(GabotoEntityPool pool, HttpServletRequest request, HttpServletResponse response, String format){
-    String orderBy = lowercaseRequestParameter(request,"orderBy");
+    orderBy = lowercaseRequestParameter(request,"orderBy");
 
     String displayParentNameStringValue = lowercaseRequestParameter(request,"parentName");
     boolean displayParentName;
@@ -312,10 +323,12 @@ public class OxPointsQueryServlet extends HttpServlet {
     } else if(format.equals("xml")){ // default
       response.setContentType("text/xml");
       
+      System.err.println("Pool has " + pool.getSize() + " elements");
       EntityPoolTransformer transformer;
       try {
         transformer = RDFPoolTransformerFactory.getRDFPoolTransformer(GabotoQuery.FORMAT_RDF_XML_ABBREV);
         output = (String)transformer.transform(pool);
+        //System.err.println(output);
       } catch (UnsupportedFormatException e) {
         throw new IllegalArgumentException(e);
       }

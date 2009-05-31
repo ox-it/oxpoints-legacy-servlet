@@ -333,7 +333,7 @@ public class OxPointsQueryServlet extends HttpServlet {
       EntityPoolTransformer transformer;
       try {
         transformer = RDFPoolTransformerFactory.getRDFPoolTransformer(GabotoQuery.FORMAT_RDF_XML_ABBREV);
-        output = (String)transformer.transform(pool);
+        output = transformer.transform(pool);
         //System.err.println(output);
       } catch (UnsupportedFormatException e) {
         throw new IllegalArgumentException(e);

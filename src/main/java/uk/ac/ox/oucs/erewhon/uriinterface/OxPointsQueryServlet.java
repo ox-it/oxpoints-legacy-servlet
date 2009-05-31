@@ -77,7 +77,7 @@ import com.hp.hpl.jena.vocabulary.DC;
  *  
  *  Format is a special case.
  *  
- *  Parameters are used for qualifers which do not effect the number of entities in the the pool. 
+ *  Parameters are used for qualifiers which do not effect the number of entities in the the pool. 
  * 
  */
 

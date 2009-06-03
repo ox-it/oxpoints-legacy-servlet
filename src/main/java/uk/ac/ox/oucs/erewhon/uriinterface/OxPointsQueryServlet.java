@@ -239,11 +239,7 @@ public class OxPointsQueryServlet extends HttpServlet {
         GabotoEntityPoolConfiguration config = new GabotoEntityPoolConfiguration(snapshot);
         config.addAcceptedType(classURI);
         GabotoEntityPool pool;
-        try {
-          pool = GabotoEntityPool.createFrom(config);
-        } catch (EntityPoolInvalidConfigurationException e) {
-          throw new RuntimeException(e);
-        }
+        pool = GabotoEntityPool.createFrom(config);
         output(pool, request, response, format);
         doneOne = true;
         break;

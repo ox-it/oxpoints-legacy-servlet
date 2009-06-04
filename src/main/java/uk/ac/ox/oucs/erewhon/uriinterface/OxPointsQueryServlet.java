@@ -52,7 +52,6 @@ import org.oucs.gaboto.transformation.RDFPoolTransformerFactory;
 import org.oucs.gaboto.transformation.json.GeoJSONPoolTransfomer;
 import org.oucs.gaboto.transformation.json.JSONPoolTransformer;
 import org.oucs.gaboto.transformation.kml.KMLPoolTransformer;
-import org.oucs.gaboto.exceptions.EntityPoolInvalidConfigurationException;
 import org.oucs.gaboto.exceptions.ResourceDoesNotExistException;
 import org.oucs.gaboto.exceptions.UnsupportedFormatException;
 import org.oucs.gaboto.model.Gaboto;
@@ -65,6 +64,8 @@ import org.oucs.gaboto.vocabulary.GeoVocab;
 import org.oucs.gaboto.vocabulary.OxPointsVocab;
 import org.oucs.gaboto.vocabulary.VCard;
 
+import com.hp.hpl.jena.ontology.OntModel;
+import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.vocabulary.DC;
 
 /**
@@ -105,6 +106,7 @@ public class OxPointsQueryServlet extends HttpServlet {
   String arc = null;
   String format = null;
   String orderBy = null;
+  String folderType = null;
   
   public void init(){
     // load Gaboto
@@ -146,6 +148,9 @@ public class OxPointsQueryServlet extends HttpServlet {
    */
   @Override
   public void doGet(HttpServletRequest request, HttpServletResponse response){
+    arc = request.getParameter("arc");
+    folderType = request.getParameter("folderType");
+    
     String pathInfo = request.getPathInfo();
     logger.debug("hi");
     if (pathInfo != null) {
@@ -175,6 +180,9 @@ public class OxPointsQueryServlet extends HttpServlet {
           throw new RuntimeException("Resource not found with uri " + uri, e);
         }
         output(pool, request, response, format);
+      } else if (pathInfo.startsWith("/types")) { 
+        GabotoEntityPool pool = GabotoEntityPool.createFrom(snapshot); 
+        output(pool, request, response, format);
       } else  
         throw new IllegalArgumentException("Unexpected path info : " + pathInfo);
     } else { 
@@ -189,6 +197,7 @@ public class OxPointsQueryServlet extends HttpServlet {
         throw new IllegalArgumentException("Unexpected 'mode' parameter: " + mode);
     } 
   }
+  
 
   private void processDefaultMode(HttpServletRequest request, HttpServletResponse response, String format) {
         
@@ -197,24 +206,21 @@ public class OxPointsQueryServlet extends HttpServlet {
     if (property == null) { 
       throw new IllegalArgumentException("'property' parameter missing");
     }
-    String fullProperty = getPropertyURI(property);
+    String propertyURI = getPropertyURIOrDie(property);
     
-    arc = request.getParameter("arc");
     
     GabotoEntityPool pool;
     
     String value = request.getParameter("value");
     if (value == null) { 
-      pool = snapshot.loadEntitiesWithProperty(fullProperty);
+      pool = snapshot.loadEntitiesWithProperty(propertyURI);
     } else { 
     
       String values[] = value.split("[|]");
     
       pool = new GabotoEntityPool(gaboto, snapshot);
       for(String v : values){
-        System.err.println("Property:"+fullProperty);
-        System.err.println("Value:"+v);
-        GabotoEntityPool p = snapshot.loadEntitiesWithProperty(fullProperty, v);
+        GabotoEntityPool p = snapshot.loadEntitiesWithProperty(propertyURI, v);
         for(GabotoEntity e : p.getEntities()) { 
           pool.addEntity(e);
           System.err.println("Adding:"+v);
@@ -237,6 +243,8 @@ public class OxPointsQueryServlet extends HttpServlet {
       System.err.println(classURI);
       if(classURI.endsWith(type)){
         GabotoEntityPoolConfiguration config = new GabotoEntityPoolConfiguration(snapshot);
+        //config.setCreatePassiveEntities(true);
+        //config.setAddReferencedEntitiesToPool(true);
         config.addAcceptedType(classURI);
         GabotoEntityPool pool;
         pool = GabotoEntityPool.createFrom(config);
@@ -282,11 +290,11 @@ public class OxPointsQueryServlet extends HttpServlet {
       
       KMLPoolTransformer transformer = new KMLPoolTransformer();
       if (arc != null) { 
-        transformer.addEntityFolderType("http://ns.ox.ac.uk/namespace/oxpoints/2009/02/owl#College", 
-            "http://ns.ox.ac.uk/namespace/oxpoints/2009/02/owl#occupies");
+        System.err.println("folderType="+folderType + ", arc=" + arc);
+        transformer.addEntityFolderType(getFolderTypeUri(folderType), getPropertyURIOrDie(arc));
       }
       if(orderBy != null){
-        transformer.setOrderBy(getPropertyURI(orderBy));
+        transformer.setOrderBy(getPropertyURIOrDie(orderBy));
       }
       transformer.setDisplayParentName(displayParentName);
 
@@ -311,11 +319,10 @@ public class OxPointsQueryServlet extends HttpServlet {
       response.setContentType("text/javascript");
       GeoJSONPoolTransfomer transformer = new GeoJSONPoolTransfomer();
       if (arc != null) { 
-        transformer.addEntityFolderType("http://ns.ox.ac.uk/namespace/oxpoints/2009/02/owl#College", 
-            "http://ns.ox.ac.uk/namespace/oxpoints/2009/02/owl#occupies");
+        transformer.addEntityFolderType(getFolderTypeUri(folderType), getPropertyURIOrDie(arc));
       }// oxpq
       if(orderBy != null){
-        transformer.setOrderBy(getPropertyURI(orderBy));
+        transformer.setOrderBy(getPropertyURIOrDie(orderBy));
       }
       transformer.setDisplayParentName(displayParentName);
 
@@ -345,14 +352,29 @@ public class OxPointsQueryServlet extends HttpServlet {
     }
   }
   
-  private String getPropertyURI(String property){
-    for(String prefix : namespacePrefixes.keySet()){
-      System.err.println("Prop:" + property + ":" + prefix);
-      if(property.startsWith(prefix))
-        return namespacePrefixes.get(prefix) + property.substring(prefix.length());
-    }
-    throw new IllegalArgumentException("Found no URI matching property " + property);
+  private String getPropertyURIOrDie(String propertyKey){
+    String returnString = getPropertyURI(propertyKey);
+    if (returnString == null)
+      throw new IllegalArgumentException("No namespace found matching property " + propertyKey);
+    OntModel m = (OntModel)snapshot.getModel(); 
+    Property p = m.getProperty(returnString);
+    if (p == null)
+      throw new IllegalArgumentException("Found no URI matching property " + propertyKey);
+    return returnString;
   }
 
-  
+  private String getPropertyURI(String propertyKey) {
+    for(String prefix : namespacePrefixes.keySet()){
+      System.err.println("Prop:" + propertyKey + ":" + prefix);
+      if(propertyKey.startsWith(prefix))
+        return namespacePrefixes.get(prefix) + propertyKey.substring(prefix.length());
+    }
+    return null;
+  }
+
+  private String getFolderTypeUri(String propertyKey) { 
+    if (propertyKey == null)
+      return "http://ns.ox.ac.uk/namespace/oxpoints/2009/02/owl#College";
+    return getPropertyURIOrDie(propertyKey);
+  }
 }

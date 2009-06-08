@@ -34,6 +34,7 @@ package uk.ac.ox.oucs.erewhon.uriinterface;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -65,51 +66,52 @@ import org.oucs.gaboto.vocabulary.OxPointsVocab;
 import org.oucs.gaboto.vocabulary.VCard;
 
 import com.hp.hpl.jena.rdf.model.Model;
-import com.hp.hpl.jena.rdf.model.Property;
-import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.vocabulary.DC;
 
 /**
  * A servlet to interrogate the OxPoints data.
  * 
- * Try invoking with 
- * http://127.0.0.1:8080/oxp/OxPointsQueryServlet?property=oxp:hasOUCSCode&value=oucs&format=kml
+ * Try invoking with
+ * http://127.0.0.1:8080/oxp/OxPointsQueryServlet?property=oxp:
+ * hasOUCSCode&value=oucs&format=kml
  * 
- *  Slashes are like dots in a method invocation. 
- *  
- *  Format is a special case.
- *  
- *  Parameters are used for qualifiers which do not effect the number of entities in the the pool. 
+ * Slashes are like dots in a method invocation.
+ * 
+ * Format is a special case.
+ * 
+ * Parameters are used for qualifiers which do not effect the number of entities
+ * in the the pool.
  * 
  */
 
 public class OxPointsQueryServlet extends HttpServlet {
 
   private static final long serialVersionUID = 4155078999145248554L;
-  private static Logger logger = Logger.getLogger(OxPointsQueryServlet.class.getName());
+  private static Logger logger = Logger.getLogger(OxPointsQueryServlet.class
+      .getName());
 
-  static Map<String,String> namespacePrefixes = new TreeMap<String, String>();
+  static Map<String, String> namespacePrefixes = new TreeMap<String, String>();
   {
     namespacePrefixes.put("oxp:", OxPointsVocab.NS);
     namespacePrefixes.put("dc:", DC.NS);
     namespacePrefixes.put("vCard:", VCard.NS);
     namespacePrefixes.put("geo:", GeoVocab.NS);
   }
-  
+
   private static Gaboto gaboto;
-  
+
   private static GabotoSnapshot snapshot;
- 
+
   private static GabotoConfiguration config;
-  
+
   private static Calendar startTime;
-  
+
   String arc = null;
   String format = null;
   String orderBy = null;
   String folderType = null;
-  
-  public void init(){
+
+  public void init() {
     // load Gaboto
     try {
       config = GabotoConfiguration.fromConfigFile();
@@ -118,266 +120,329 @@ public class OxPointsQueryServlet extends HttpServlet {
     }
     GabotoLibrary.init(config);
     gaboto = GabotoFactory.getEmptyInMemoryGaboto();
-    
+
     gaboto.read(getResourceOrDie("graphs.rdf"), getResourceOrDie("cdg.rdf"));
     gaboto.recreateTimeDimensionIndex();
-    
+
     startTime = Calendar.getInstance();
-    
+
     snapshot = gaboto.getSnapshot(TimeInstant.from(startTime));
-    
+
   }
-  
-  private InputStream getResourceOrDie(String fileName) { 
+
+  private InputStream getResourceOrDie(String fileName) {
     String resourceName = "resources/" + fileName;
-    InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream(resourceName);
-    if (is == null) 
-      throw new NullPointerException("File " + resourceName + " cannot be loaded");
+    InputStream is = Thread.currentThread().getContextClassLoader()
+        .getResourceAsStream(resourceName);
+    if (is == null)
+      throw new NullPointerException("File " + resourceName
+          + " cannot be loaded");
     return is;
   }
-  
-  private void setFormatFromPathInfo(String pathInfo) { 
+
+  private void setFormatFromPathInfo(String pathInfo) {
     int dotPosition = pathInfo.indexOf('.');
     if (dotPosition == -1) {
-      format = "xml"; 
-    } else { 
+      format = "xml";
+    } else {
       format = pathInfo.substring(dotPosition + 1);
-    }    
+    }
   }
-  
+
   /**
    */
   @Override
-  public void doGet(HttpServletRequest request, HttpServletResponse response){
+  public void doGet(HttpServletRequest request, HttpServletResponse response) {
     arc = request.getParameter("arc");
     folderType = request.getParameter("folderType");
+    GabotoEntityPool pool = null;
+    
     
     String pathInfo = request.getPathInfo();
-    logger.debug("hi");
     if (pathInfo != null) {
       setFormatFromPathInfo(pathInfo);
-      if (pathInfo.startsWith("/timestamp")) { 
+      if (pathInfo.startsWith("/timestamp")) {
         try {
-          response.getWriter().write(new Long(startTime.getTimeInMillis()).toString());
+          response.getWriter().write(
+              new Long(startTime.getTimeInMillis()).toString());
+          return;
         } catch (IOException e) {
           throw new RuntimeException(e);
         }
-      } else if (pathInfo.startsWith("/all")) { 
-        output(GabotoEntityPool.createFrom(snapshot), request, response, format);
-      } else if (pathInfo.startsWith("/id/")) { 
-        
+      } else if (pathInfo.startsWith("/all")) {
+        pool = GabotoEntityPool.createFrom(snapshot);
+      } else if (pathInfo.startsWith("/id/")) {
+
         int dotPosition = pathInfo.indexOf('.');
         String id = null;
         if (dotPosition == -1) {
           id = pathInfo.substring(4);
-        } else { 
+        } else {
           id = pathInfo.substring(4, dotPosition);
         }
         String uri = config.getNSData() + id;
-        GabotoEntityPool pool = new GabotoEntityPool(gaboto, snapshot);
+        pool = new GabotoEntityPool(gaboto, snapshot);
         try {
           pool.addEntity(snapshot.loadEntity(uri));
         } catch (ResourceDoesNotExistException e) {
           throw new RuntimeException("Resource not found with uri " + uri, e);
         }
-        output(pool, request, response, format);
-      } else if (pathInfo.startsWith("/types")) { 
-        GabotoEntityPool pool = GabotoEntityPool.createFrom(snapshot); 
-        
-        output(pool, request, response, format);
-      } else  
+      } else if (pathInfo.startsWith("/types")) {
+        output(GabotoOntologyLookup.getRegisteredEntityClassesAsClassNames(),
+            request, response, format);
+        return;
+      } else
         throw new IllegalArgumentException("Unexpected path info : " + pathInfo);
-    } else { 
-      format = lowercaseRequestParameter(request,"format");
-      if (format == null) format = "xml"; 
+    } else {
+      format = lowercaseRequestParameter(request, "format");
+      if (format == null)
+        format = "xml";
       String mode = request.getParameter("mode");
-      if(mode == null)
-        processDefaultMode(request, response, format);
-      else if(mode.equals("all"))
-        doAllOfType(request, response, format);
-      else 
-        throw new IllegalArgumentException("Unexpected 'mode' parameter: " + mode);
-    } 
-  }
-  
+      if (mode == null) {
+        pool = loadPoolWithEntitiesOfProperty(request);
+      } else if (mode.equals("all")) {
+        pool = loadPoolWithEntitiesOfType(request);
+      } else
+        throw new IllegalArgumentException("Unexpected 'mode' parameter: "
+            + mode);
+    }
+    output(pool, request, response, format);
 
-  private void processDefaultMode(HttpServletRequest request, HttpServletResponse response, String format) {
-        
+  }
+
+  private GabotoEntityPool loadPoolWithEntitiesOfProperty(
+      HttpServletRequest request) {
+
     // load parameters
     String property = request.getParameter("property");
-    if (property == null) { 
+    if (property == null) {
       throw new IllegalArgumentException("'property' parameter missing");
     }
     String propertyURI = getPropertyURIOrDie(property);
-    
-    
-    GabotoEntityPool pool;
-    
+
+    GabotoEntityPool pool = null;
+
     String value = request.getParameter("value");
-    if (value == null) { 
+    if (value == null) {
       pool = snapshot.loadEntitiesWithProperty(propertyURI);
-    } else { 
-    
+    } else {
+
       String values[] = value.split("[|]");
-    
+
       pool = new GabotoEntityPool(gaboto, snapshot);
-      for(String v : values){
+      for (String v : values) {
         GabotoEntityPool p = snapshot.loadEntitiesWithProperty(propertyURI, v);
-        for(GabotoEntity e : p.getEntities()) { 
+        for (GabotoEntity e : p.getEntities()) {
           pool.addEntity(e);
-          System.err.println("Adding:"+v);
+          System.err.println("Adding:" + v);
         }
       }
     }
-      
-    output(pool, request, response, format);
+    return pool;
   }
-  
-  private void doAllOfType(HttpServletRequest request, HttpServletResponse response, String format) {
-    
+
+  private GabotoEntityPool loadPoolWithEntitiesOfType(HttpServletRequest request) {
+
     String type = request.getParameter("type");
-    if (type == null) { 
+    if (type == null) {
       throw new IllegalArgumentException("'type' parameter missing");
     }
+    GabotoEntityPool pool = null;
     type = "#" + type;
     boolean doneOne = false;
-    for(String classURI : GabotoOntologyLookup.getRegisteredClassesAsURIs()){
-      System.err.println(classURI);
-      if(classURI.endsWith(type)){
-        GabotoEntityPoolConfiguration config = new GabotoEntityPoolConfiguration(snapshot);
-        //config.setCreatePassiveEntities(true);
-        //config.setAddReferencedEntitiesToPool(true);
+    for (String classURI : GabotoOntologyLookup.getRegisteredClassesAsURIs()) {
+      System.err.println("RegisteredClassURI:" + classURI);
+      if (classURI.endsWith(type)) {
+        GabotoEntityPoolConfiguration config = new GabotoEntityPoolConfiguration(
+            snapshot);
+        // config.setCreatePassiveEntities(true);
+        // config.setAddReferencedEntitiesToPool(true);
         config.addAcceptedType(classURI);
-        GabotoEntityPool pool;
         pool = GabotoEntityPool.createFrom(config);
-        output(pool, request, response, format);
         doneOne = true;
         break;
       }
     }
-    if(!doneOne)
+    if (!doneOne)
       throw new RuntimeException("No, matching type found :" + type);
+    return pool;
   }
 
-  private String lowercaseRequestParameter(HttpServletRequest request, String name) { 
+  private String lowercaseRequestParameter(HttpServletRequest request,
+      String name) {
     String p = request.getParameter(name);
-    if (p != null) 
+    if (p != null)
       p = p.toLowerCase();
     return p;
   }
-  
-  private void output(GabotoEntityPool pool, HttpServletRequest request, HttpServletResponse response, String format){
-    orderBy = lowercaseRequestParameter(request,"orderBy");
 
-    String displayParentNameStringValue = lowercaseRequestParameter(request,"parentName");
+  private void output(Collection<String> them, HttpServletRequest request,
+      HttpServletResponse response, String format) {
+    try {
+      if (format.equals("txt")) {
+        boolean doneOne = false;
+        for (String member : them) {
+          if (doneOne)
+            response.getWriter().write("|");
+          response.getWriter().write(member);
+          doneOne = true;
+        }
+        response.getWriter().write("\n");
+      } else if (format.equals("csv")) {
+        boolean doneOne = false;
+        for (String member : them) {
+          if (doneOne)
+            response.getWriter().write(",");
+          response.getWriter().write(member);
+          doneOne = true;
+        }
+        response.getWriter().write("\n");
+      } else if (format.equals("js")) {
+        boolean doneOne = false;
+        response.getWriter().write("var oxpointsTypes = [");
+        for (String member : them) {
+          if (doneOne)
+            response.getWriter().write(",");
+          response.getWriter().write("'");
+          response.getWriter().write(member);
+          response.getWriter().write("'");
+          doneOne = true;
+        }
+        response.getWriter().write("];\n");
+      } else if (format.equals("xml")) {
+        response.getWriter().write("<c>");
+        for (String member : them) {
+          response.getWriter().write("<i>");
+          response.getWriter().write(member);
+          response.getWriter().write("</i>");
+        }
+        response.getWriter().write("</c>");
+        response.getWriter().write("\n");
+      } else
+        throw new IllegalArgumentException("Unexpeted format " + format);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private void output(GabotoEntityPool pool, HttpServletRequest request,
+      HttpServletResponse response, String format) {
+    orderBy = lowercaseRequestParameter(request, "orderBy");
+
+    String displayParentNameStringValue = lowercaseRequestParameter(request,
+        "parentName");
     boolean displayParentName;
-    if (displayParentNameStringValue == null) {  
-      displayParentName = true; 
+    if (displayParentNameStringValue == null) {
+      displayParentName = true;
     } else {
       if (displayParentNameStringValue.equals("false"))
-        displayParentName = false; 
+        displayParentName = false;
       else
-        displayParentName = true; 
+        displayParentName = true;
     }
-    
-    String jsCallback = lowercaseRequestParameter(request,"jsCallback");
+
+    String jsCallback = lowercaseRequestParameter(request, "jsCallback");
     // clean params
-    if(jsCallback != null){
+    if (jsCallback != null) {
       jsCallback = jsCallback.replaceAll("[^a-zA-Z0-9_]", "");
     }
-    
+
     String output = "";
-    if(format.equals("kml")){
+    if (format.equals("kml")) {
       response.setContentType("application/vnd.google-earth.kml+xml");
-      
+
       KMLPoolTransformer transformer = new KMLPoolTransformer();
-      if (arc != null) { 
-        System.err.println("folderType="+folderType + ", arc=" + arc);
-        transformer.addEntityFolderType(getFolderTypeUri(folderType), getPropertyURIOrDie(arc));
+      if (arc != null) {
+        System.err.println("folderType=" + folderType + ", arc=" + arc);
+        transformer.addEntityFolderType(getFolderTypeUri(folderType),
+            getPropertyURIOrDie(arc));
       }
-      if(orderBy != null){
+      if (orderBy != null) {
         transformer.setOrderBy(getPropertyURIOrDie(orderBy));
       }
       transformer.setDisplayParentName(displayParentName);
 
       output = transformer.transform(pool);
-    } else if(format.equals("json")){
+    } else if (format.equals("json")) {
       response.setContentType("text/javascript");
       JSONPoolTransformer transformer = new JSONPoolTransformer();
-      String jsonNesting = lowercaseRequestParameter(request,"jsonNesting");
-      if(jsonNesting != null){
-        try{
+      String jsonNesting = lowercaseRequestParameter(request, "jsonNesting");
+      if (jsonNesting != null) {
+        try {
           int level = Integer.parseInt(jsonNesting);
           transformer.setNesting(level);
-        } catch(NumberFormatException e){
+        } catch (NumberFormatException e) {
           throw new IllegalArgumentException(e);
         }
       }
 
       output = transformer.transform(pool);
-      if(jsCallback != null)
+      if (jsCallback != null)
         output = jsCallback + "(" + output + ");";
-    } else if(format.equals("gjson")){
+    } else if (format.equals("gjson")) {
       response.setContentType("text/javascript");
       GeoJSONPoolTransfomer transformer = new GeoJSONPoolTransfomer();
-      if (arc != null) { 
-        transformer.addEntityFolderType(getFolderTypeUri(folderType), getPropertyURIOrDie(arc));
+      if (arc != null) {
+        transformer.addEntityFolderType(getFolderTypeUri(folderType),
+            getPropertyURIOrDie(arc));
       }// oxpq
-      if(orderBy != null){
+      if (orderBy != null) {
         transformer.setOrderBy(getPropertyURIOrDie(orderBy));
       }
       transformer.setDisplayParentName(displayParentName);
 
       output += transformer.transform(pool);
-      if(jsCallback != null)
+      if (jsCallback != null)
         output = jsCallback + "(" + output + ");";
-    } else if(format.equals("xml")){ // default
+    } else if (format.equals("xml")) { // default
       response.setContentType("text/xml");
-      
+
       System.err.println("Pool has " + pool.getSize() + " elements");
       EntityPoolTransformer transformer;
       try {
-        transformer = RDFPoolTransformerFactory.getRDFPoolTransformer(GabotoQuery.FORMAT_RDF_XML_ABBREV);
+        transformer = RDFPoolTransformerFactory
+            .getRDFPoolTransformer(GabotoQuery.FORMAT_RDF_XML_ABBREV);
         output = transformer.transform(pool);
-        //System.err.println(output);
+        // System.err.println(output);
       } catch (UnsupportedFormatException e) {
         throw new IllegalArgumentException(e);
       }
     } else {
-      throw new IllegalArgumentException("Unexpected format parameter: [" + format + "]");
+      throw new IllegalArgumentException("Unexpected format parameter: ["
+          + format + "]");
     }
-      
+
     try {
       response.getWriter().write(output);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
   }
-  
-  private String getPropertyURIOrDie(String propertyKey){
+
+  private String getPropertyURIOrDie(String propertyKey) {
     String returnString = getPropertyURI(propertyKey);
     if (returnString == null)
-      throw new IllegalArgumentException("No namespace found matching property " + propertyKey);
-    Model m = snapshot.getModel(); 
+      throw new IllegalArgumentException(
+          "No namespace found matching property " + propertyKey);
     /*
-    Property p = m.getProperty(returnString);
-    System.err.println(p);
-    if (!m.contains(null, p, (RDFNode)null))
-      throw new IllegalArgumentException("Found no URI matching property " + p);
-      */
+     * Model m = snapshot.getModel(); Property p = m.getProperty(returnString);
+     * System.err.println(p); if (!m.contains(null, p, (RDFNode)null)) throw new
+     * IllegalArgumentException("Found no URI matching property " + p);
+     */
     return returnString;
   }
 
   private String getPropertyURI(String propertyKey) {
-    for(String prefix : namespacePrefixes.keySet()){
+    for (String prefix : namespacePrefixes.keySet()) {
       System.err.println("Prop:" + propertyKey + ":" + prefix);
-      if(propertyKey.startsWith(prefix))
-        return namespacePrefixes.get(prefix) + propertyKey.substring(prefix.length());
+      if (propertyKey.startsWith(prefix))
+        return namespacePrefixes.get(prefix)
+            + propertyKey.substring(prefix.length());
     }
     return null;
   }
 
-  private String getFolderTypeUri(String propertyKey) { 
+  private String getFolderTypeUri(String propertyKey) {
     if (propertyKey == null)
       return "http://ns.ox.ac.uk/namespace/oxpoints/2009/02/owl#College";
     return getPropertyURIOrDie(propertyKey);

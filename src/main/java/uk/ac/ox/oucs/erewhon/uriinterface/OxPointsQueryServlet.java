@@ -65,7 +65,6 @@ import org.oucs.gaboto.vocabulary.GeoVocab;
 import org.oucs.gaboto.vocabulary.OxPointsVocab;
 import org.oucs.gaboto.vocabulary.VCard;
 
-import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.vocabulary.DC;
 
 /**
@@ -87,8 +86,7 @@ import com.hp.hpl.jena.vocabulary.DC;
 public class OxPointsQueryServlet extends HttpServlet {
 
   private static final long serialVersionUID = 4155078999145248554L;
-  private static Logger logger = Logger.getLogger(OxPointsQueryServlet.class
-      .getName());
+  private static Logger logger = Logger.getLogger(OxPointsQueryServlet.class.getName());
 
   static Map<String, String> namespacePrefixes = new TreeMap<String, String>();
   {
@@ -247,24 +245,14 @@ public class OxPointsQueryServlet extends HttpServlet {
     if (type == null) {
       throw new IllegalArgumentException("'type' parameter missing");
     }
+    if (!GabotoOntologyLookup.isValidName(type)) 
+      throw new IllegalArgumentException("Found no URI matching type " + type);
+    
     GabotoEntityPool pool = null;
-    type = "#" + type;
-    boolean doneOne = false;
-    for (String classURI : GabotoOntologyLookup.getRegisteredClassesAsURIs()) {
-      System.err.println("RegisteredClassURI:" + classURI);
-      if (classURI.endsWith(type)) {
-        GabotoEntityPoolConfiguration config = new GabotoEntityPoolConfiguration(
-            snapshot);
-        // config.setCreatePassiveEntities(true);
-        // config.setAddReferencedEntitiesToPool(true);
-        config.addAcceptedType(classURI);
-        pool = GabotoEntityPool.createFrom(config);
-        doneOne = true;
-        break;
-      }
-    }
-    if (!doneOne)
-      throw new RuntimeException("No, matching type found :" + type);
+    type = "http://ns.ox.ac.uk/namespace/oxpoints/2009/02/owl#" + type;
+    GabotoEntityPoolConfiguration config = new GabotoEntityPoolConfiguration(snapshot);
+    config.addAcceptedType(type);
+    pool = GabotoEntityPool.createFrom(config);
     return pool;
   }
 
@@ -424,11 +412,6 @@ public class OxPointsQueryServlet extends HttpServlet {
     if (returnString == null)
       throw new IllegalArgumentException(
           "No namespace found matching property " + propertyKey);
-    /*
-     * Model m = snapshot.getModel(); Property p = m.getProperty(returnString);
-     * System.err.println(p); if (!m.contains(null, p, (RDFNode)null)) throw new
-     * IllegalArgumentException("Found no URI matching property " + p);
-     */
     return returnString;
   }
 

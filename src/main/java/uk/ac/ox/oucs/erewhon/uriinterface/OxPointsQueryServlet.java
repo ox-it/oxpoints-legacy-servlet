@@ -64,8 +64,9 @@ import org.oucs.gaboto.vocabulary.GeoVocab;
 import org.oucs.gaboto.vocabulary.OxPointsVocab;
 import org.oucs.gaboto.vocabulary.VCard;
 
-import com.hp.hpl.jena.ontology.OntModel;
+import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.Property;
+import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.vocabulary.DC;
 
 /**
@@ -168,7 +169,7 @@ public class OxPointsQueryServlet extends HttpServlet {
         int dotPosition = pathInfo.indexOf('.');
         String id = null;
         if (dotPosition == -1) {
-          id = pathInfo;
+          id = pathInfo.substring(4);
         } else { 
           id = pathInfo.substring(4, dotPosition);
         }
@@ -182,6 +183,7 @@ public class OxPointsQueryServlet extends HttpServlet {
         output(pool, request, response, format);
       } else if (pathInfo.startsWith("/types")) { 
         GabotoEntityPool pool = GabotoEntityPool.createFrom(snapshot); 
+        
         output(pool, request, response, format);
       } else  
         throw new IllegalArgumentException("Unexpected path info : " + pathInfo);
@@ -356,10 +358,13 @@ public class OxPointsQueryServlet extends HttpServlet {
     String returnString = getPropertyURI(propertyKey);
     if (returnString == null)
       throw new IllegalArgumentException("No namespace found matching property " + propertyKey);
-    OntModel m = (OntModel)snapshot.getModel(); 
+    Model m = snapshot.getModel(); 
+    /*
     Property p = m.getProperty(returnString);
-    if (p == null)
-      throw new IllegalArgumentException("Found no URI matching property " + propertyKey);
+    System.err.println(p);
+    if (!m.contains(null, p, (RDFNode)null))
+      throw new IllegalArgumentException("Found no URI matching property " + p);
+      */
     return returnString;
   }
 

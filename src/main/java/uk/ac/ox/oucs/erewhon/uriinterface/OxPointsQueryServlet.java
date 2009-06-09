@@ -31,8 +31,12 @@
  */
 package uk.ac.ox.oucs.erewhon.uriinterface;
 
+import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Map;
@@ -129,7 +133,7 @@ public class OxPointsQueryServlet extends HttpServlet {
   }
 
   private InputStream getResourceOrDie(String fileName) {
-    String resourceName = "/resources/" + fileName;
+    String resourceName =  fileName;
     InputStream is = Thread.currentThread().getContextClassLoader()
         .getResourceAsStream(resourceName);
     if (is == null)
@@ -192,35 +196,63 @@ public class OxPointsQueryServlet extends HttpServlet {
       } else
         throw new IllegalArgumentException("Unexpected path info : " + pathInfo);
     } else {
+      System.err.println("Here");
       format = lowercaseRequestParameter(request, "format");
       if (format == null)
         format = "xml";
-      String mode = request.getParameter("mode");
-      if (mode == null) {
-        pool = loadPoolWithEntitiesOfProperty(request);
-      } else if (mode.equals("all")) {
-        pool = loadPoolWithEntitiesOfType(request);
-      } else
-        throw new IllegalArgumentException("Unexpected 'mode' parameter: "
-            + mode);
+      String type = request.getParameter("type");
+      String property = request.getParameter("property");
+      if (type  != null) {
+        pool = loadPoolWithEntitiesOfType(type);
+      } else if (property != null) {
+        pool = loadPoolWithEntitiesOfProperty(property, request.getParameter("value"));
+      } else 
+        System.err.println("Here2");
+        runPerl(response);
+        return;
     }
     output(pool, request, response, format);
 
   }
 
-  private GabotoEntityPool loadPoolWithEntitiesOfProperty(
-      HttpServletRequest request) {
-
-    // load parameters
-    String property = request.getParameter("property");
-    if (property == null) {
-      throw new IllegalArgumentException("'property' parameter missing");
+  private void runPerl(HttpServletResponse response)  { 
+    InputStream stderr = null;
+    InputStream stdout = null;    
+    // launch EXE and grab stdin/stdout and stderr
+    Process process;
+    try {
+      process = Runtime.getRuntime().exec(
+          "perl oxpoints.pl", null, new File("/home/dist/uriinterface/"));
+      stdout = process.getInputStream();
+      stderr = process.getErrorStream ();
+      BufferedReader brCleanUp = 
+          new BufferedReader (new InputStreamReader (stdout));
+      String line;
+      String output = "";
+      while ((line = brCleanUp.readLine ()) != null) {
+        System.out.println ("[Stdout] " + line);
+        output += line;
+      }
+      brCleanUp.close();
+        
+      // clean up if any output in stderr
+      brCleanUp = 
+        new BufferedReader (new InputStreamReader (stderr));
+      while ((line = brCleanUp.readLine ()) != null) {
+        System.err.println ("[Stderr] " + line);
+        output += line;
+      }
+      brCleanUp.close();
+      response.getWriter().write(output);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
+  }
+  private GabotoEntityPool loadPoolWithEntitiesOfProperty(String property, String value) {
     String propertyURI = getPropertyURIOrDie(property);
 
     GabotoEntityPool pool = null;
 
-    String value = request.getParameter("value");
     if (value == null) {
       pool = snapshot.loadEntitiesWithProperty(propertyURI);
     } else {
@@ -239,12 +271,8 @@ public class OxPointsQueryServlet extends HttpServlet {
     return pool;
   }
 
-  private GabotoEntityPool loadPoolWithEntitiesOfType(HttpServletRequest request) {
+  private GabotoEntityPool loadPoolWithEntitiesOfType(String type) {
 
-    String type = request.getParameter("type");
-    if (type == null) {
-      throw new IllegalArgumentException("'type' parameter missing");
-    }
     String types[] = type.split("[|]");
 
     GabotoEntityPoolConfiguration config = new GabotoEntityPoolConfiguration(snapshot);

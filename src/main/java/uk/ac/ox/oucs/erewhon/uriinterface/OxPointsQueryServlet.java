@@ -129,7 +129,7 @@ public class OxPointsQueryServlet extends HttpServlet {
   }
 
   private InputStream getResourceOrDie(String fileName) {
-    String resourceName = "resources/" + fileName;
+    String resourceName = "/resources/" + fileName;
     InputStream is = Thread.currentThread().getContextClassLoader()
         .getResourceAsStream(resourceName);
     if (is == null)
@@ -245,15 +245,18 @@ public class OxPointsQueryServlet extends HttpServlet {
     if (type == null) {
       throw new IllegalArgumentException("'type' parameter missing");
     }
-    if (!GabotoOntologyLookup.isValidName(type)) 
-      throw new IllegalArgumentException("Found no URI matching type " + type);
-    
-    GabotoEntityPool pool = null;
-    type = "http://ns.ox.ac.uk/namespace/oxpoints/2009/02/owl#" + type;
+    String types[] = type.split("[|]");
+
     GabotoEntityPoolConfiguration config = new GabotoEntityPoolConfiguration(snapshot);
-    config.addAcceptedType(type);
-    pool = GabotoEntityPool.createFrom(config);
-    return pool;
+    for (String t : types) {
+      if (!GabotoOntologyLookup.isValidName(t)) 
+        throw new IllegalArgumentException("Found no URI matching type " + t);
+      String typeURI  = "http://ns.ox.ac.uk/namespace/oxpoints/2009/02/owl#" + t;
+      System.err.println("Adding:" + typeURI);
+      config.addAcceptedType(t);
+    }
+    
+    return GabotoEntityPool.createFrom(config);
   }
 
   private String lowercaseRequestParameter(HttpServletRequest request,

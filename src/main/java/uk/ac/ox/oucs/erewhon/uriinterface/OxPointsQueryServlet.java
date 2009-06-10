@@ -142,12 +142,17 @@ public class OxPointsQueryServlet extends HttpServlet {
     return is;
   }
 
-  private void setFormatFromPathInfo(String pathInfo) {
+  private String setFormatFromPathInfo(String pathInfo) {
     int dotPosition = pathInfo.indexOf('.');
     if (dotPosition == -1) {
       format = "xml";
     } else {
       format = pathInfo.substring(dotPosition + 1);
+    }
+    if (dotPosition == -1) {
+      return pathInfo;
+    } else {
+      return pathInfo.substring(0, dotPosition);
     }
   }
 
@@ -162,7 +167,7 @@ public class OxPointsQueryServlet extends HttpServlet {
     
     String pathInfo = request.getPathInfo();
     if (pathInfo != null) {
-      setFormatFromPathInfo(pathInfo);
+      pathInfo = setFormatFromPathInfo(pathInfo);
       if (pathInfo.startsWith("/timestamp")) {
         try {
           response.getWriter().write(
@@ -175,13 +180,7 @@ public class OxPointsQueryServlet extends HttpServlet {
         pool = GabotoEntityPool.createFrom(snapshot);
       } else if (pathInfo.startsWith("/id/")) {
 
-        int dotPosition = pathInfo.indexOf('.');
-        String id = null;
-        if (dotPosition == -1) {
-          id = pathInfo.substring(4);
-        } else {
-          id = pathInfo.substring(4, dotPosition);
-        }
+        String id = pathInfo.substring(4);
         String uri = config.getNSData() + id;
         pool = new GabotoEntityPool(gaboto, snapshot);
         try {
@@ -193,10 +192,13 @@ public class OxPointsQueryServlet extends HttpServlet {
         output(GabotoOntologyLookup.getRegisteredEntityClassesAsClassNames(),
             request, response, format);
         return;
+      } else if (pathInfo.startsWith("/type/")) {
+        output(GabotoOntologyLookup.getRegisteredEntityClassesAsClassNames(),
+            request, response, format);
+        return;
       } else
         throw new IllegalArgumentException("Unexpected path info : " + pathInfo);
     } else {
-      System.err.println("Here");
       format = lowercaseRequestParameter(request, "format");
       if (format == null)
         format = "xml";
@@ -206,29 +208,35 @@ public class OxPointsQueryServlet extends HttpServlet {
         pool = loadPoolWithEntitiesOfType(type);
       } else if (property != null) {
         pool = loadPoolWithEntitiesOfProperty(property, request.getParameter("value"));
-      } else 
-        System.err.println("Here2");
-        runPerl(response);
-        return;
+      } else { 
+        pool = GabotoEntityPool.createFrom(snapshot);        
+      }
     }
     output(pool, request, response, format);
 
   }
 
-  private void runPerl(HttpServletResponse response)  { 
+  private String  runBabel(String kmlIn)  { 
+    // '/usr/bin/gpsbabel -i kml -o ' . $format . ' -f ' . $In . ' -F ' . $Out;
+    OutputStream stdin = null;
     InputStream stderr = null;
     InputStream stdout = null;    
     // launch EXE and grab stdin/stdout and stderr
+    String output = "";
     Process process;
     try {
       process = Runtime.getRuntime().exec(
-          "perl oxpoints.pl", null, new File("/home/dist/uriinterface/"));
+          "/usr/bin/gpsbabel -i kml -o " + format + " -f - -F -", null, null);
+      stdin = process.getOutputStream ();
+      
       stdout = process.getInputStream();
       stderr = process.getErrorStream ();
+      stdin.write(kmlIn.getBytes() );
+      stdin.flush();
+      stdin.close();
       BufferedReader brCleanUp = 
           new BufferedReader (new InputStreamReader (stdout));
       String line;
-      String output = "";
       while ((line = brCleanUp.readLine ()) != null) {
         System.out.println ("[Stdout] " + line);
         output += line;
@@ -240,13 +248,12 @@ public class OxPointsQueryServlet extends HttpServlet {
         new BufferedReader (new InputStreamReader (stderr));
       while ((line = brCleanUp.readLine ()) != null) {
         System.err.println ("[Stderr] " + line);
-        output += line;
       }
       brCleanUp.close();
-      response.getWriter().write(output);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+    return output;
   }
   private GabotoEntityPool loadPoolWithEntitiesOfProperty(String property, String value) {
     String propertyURI = getPropertyURIOrDie(property);
@@ -369,19 +376,7 @@ public class OxPointsQueryServlet extends HttpServlet {
     String output = "";
     if (format.equals("kml")) {
       response.setContentType("application/vnd.google-earth.kml+xml");
-
-      KMLPoolTransformer transformer = new KMLPoolTransformer();
-      if (arc != null) {
-        System.err.println("folderType=" + folderType + ", arc=" + arc);
-        transformer.addEntityFolderType(getFolderTypeUri(folderType),
-            getPropertyURIOrDie(arc));
-      }
-      if (orderBy != null) {
-        transformer.setOrderBy(getPropertyURIOrDie(orderBy));
-      }
-      transformer.setDisplayParentName(displayParentName);
-
-      output = transformer.transform(pool);
+      output = createKml(pool, displayParentName);
     } else if (format.equals("json")) {
       response.setContentType("text/javascript");
       JSONPoolTransformer transformer = new JSONPoolTransformer();
@@ -427,15 +422,30 @@ public class OxPointsQueryServlet extends HttpServlet {
         throw new IllegalArgumentException(e);
       }
     } else {
-      throw new IllegalArgumentException("Unexpected format parameter: ["
-          + format + "]");
+      output = runBabel(createKml(pool, displayParentName));
     }
-
     try {
       response.getWriter().write(output);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  private String createKml(GabotoEntityPool pool, boolean displayParentName) {
+    String output;
+    KMLPoolTransformer transformer = new KMLPoolTransformer();
+    if (arc != null) {
+      System.err.println("folderType=" + folderType + ", arc=" + arc);
+      transformer.addEntityFolderType(getFolderTypeUri(folderType),
+          getPropertyURIOrDie(arc));
+    }
+    if (orderBy != null) {
+      transformer.setOrderBy(getPropertyURIOrDie(orderBy));
+    }
+    transformer.setDisplayParentName(displayParentName);
+
+    output = transformer.transform(pool);
+    return output;
   }
 
   private String getPropertyURIOrDie(String propertyKey) {

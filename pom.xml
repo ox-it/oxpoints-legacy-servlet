@@ -172,7 +172,6 @@
    </resource>
    <resource>
     <directory>resources</directory>
-    <targetPath>resources</targetPath>
     <includes>
      <include>**/*.rdf</include>
     </includes>

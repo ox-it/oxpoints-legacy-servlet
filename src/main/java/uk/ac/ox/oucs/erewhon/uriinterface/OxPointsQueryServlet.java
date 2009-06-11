@@ -32,7 +32,6 @@
 package uk.ac.ox.oucs.erewhon.uriinterface;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -90,8 +89,8 @@ import com.hp.hpl.jena.vocabulary.DC;
 public class OxPointsQueryServlet extends HttpServlet {
 
   private static final long serialVersionUID = 4155078999145248554L;
-  private static Logger logger = Logger.getLogger(OxPointsQueryServlet.class.getName());
-
+  private static Logger logger = Logger.getLogger(OxPointsQueryServlet.class
+      .getName());
   static Map<String, String> namespacePrefixes = new TreeMap<String, String>();
   {
     namespacePrefixes.put("oxp:", OxPointsVocab.NS);
@@ -114,6 +113,7 @@ public class OxPointsQueryServlet extends HttpServlet {
   String folderType = null;
 
   public void init() {
+    logger.debug("init");
     // load Gaboto
     try {
       config = GabotoConfiguration.fromConfigFile();
@@ -133,7 +133,7 @@ public class OxPointsQueryServlet extends HttpServlet {
   }
 
   private InputStream getResourceOrDie(String fileName) {
-    String resourceName =  fileName;
+    String resourceName = fileName;
     InputStream is = Thread.currentThread().getContextClassLoader()
         .getResourceAsStream(resourceName);
     if (is == null)
@@ -163,8 +163,7 @@ public class OxPointsQueryServlet extends HttpServlet {
     arc = request.getParameter("arc");
     folderType = request.getParameter("folderType");
     GabotoEntityPool pool = null;
-    
-    
+
     String pathInfo = request.getPathInfo();
     if (pathInfo != null) {
       pathInfo = setFormatFromPathInfo(pathInfo);
@@ -204,58 +203,22 @@ public class OxPointsQueryServlet extends HttpServlet {
         format = "xml";
       String type = request.getParameter("type");
       String property = request.getParameter("property");
-      if (type  != null) {
+      if (type != null) {
         pool = loadPoolWithEntitiesOfType(type);
       } else if (property != null) {
-        pool = loadPoolWithEntitiesOfProperty(property, request.getParameter("value"));
-      } else { 
-        pool = GabotoEntityPool.createFrom(snapshot);        
+        pool = loadPoolWithEntitiesOfProperty(property, request
+            .getParameter("value"));
+      } else {
+        pool = GabotoEntityPool.createFrom(snapshot);
       }
     }
     output(pool, request, response, format);
 
   }
 
-  private String  runBabel(String kmlIn)  { 
-    // '/usr/bin/gpsbabel -i kml -o ' . $format . ' -f ' . $In . ' -F ' . $Out;
-    OutputStream stdin = null;
-    InputStream stderr = null;
-    InputStream stdout = null;    
-    // launch EXE and grab stdin/stdout and stderr
-    String output = "";
-    Process process;
-    try {
-      process = Runtime.getRuntime().exec(
-          "/usr/bin/gpsbabel -i kml -o " + format + " -f - -F -", null, null);
-      stdin = process.getOutputStream ();
-      
-      stdout = process.getInputStream();
-      stderr = process.getErrorStream ();
-      stdin.write(kmlIn.getBytes() );
-      stdin.flush();
-      stdin.close();
-      BufferedReader brCleanUp = 
-          new BufferedReader (new InputStreamReader (stdout));
-      String line;
-      while ((line = brCleanUp.readLine ()) != null) {
-        System.out.println ("[Stdout] " + line);
-        output += line;
-      }
-      brCleanUp.close();
-        
-      // clean up if any output in stderr
-      brCleanUp = 
-        new BufferedReader (new InputStreamReader (stderr));
-      while ((line = brCleanUp.readLine ()) != null) {
-        System.err.println ("[Stderr] " + line);
-      }
-      brCleanUp.close();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-    return output;
-  }
-  private GabotoEntityPool loadPoolWithEntitiesOfProperty(String property, String value) {
+
+  private GabotoEntityPool loadPoolWithEntitiesOfProperty(String property,
+      String value) {
     String propertyURI = getPropertyURIOrDie(property);
 
     GabotoEntityPool pool = null;
@@ -279,18 +242,19 @@ public class OxPointsQueryServlet extends HttpServlet {
   }
 
   private GabotoEntityPool loadPoolWithEntitiesOfType(String type) {
-
+    System.err.println("Type:" + type);
     String types[] = type.split("[|]");
 
-    GabotoEntityPoolConfiguration config = new GabotoEntityPoolConfiguration(snapshot);
+    GabotoEntityPoolConfiguration config = new GabotoEntityPoolConfiguration(
+        snapshot);
     for (String t : types) {
-      if (!GabotoOntologyLookup.isValidName(t)) 
+      if (!GabotoOntologyLookup.isValidName(t))
         throw new IllegalArgumentException("Found no URI matching type " + t);
-      String typeURI  = "http://ns.ox.ac.uk/namespace/oxpoints/2009/02/owl#" + t;
+      String typeURI = OxPointsVocab.NS +  t;
       System.err.println("Adding:" + typeURI);
       config.addAcceptedType(t);
     }
-    
+
     return GabotoEntityPool.createFrom(config);
   }
 
@@ -422,7 +386,9 @@ public class OxPointsQueryServlet extends HttpServlet {
         throw new IllegalArgumentException(e);
       }
     } else {
-      output = runBabel(createKml(pool, displayParentName));
+      output = runGPSBabel(createKml(pool, displayParentName), "kml", format);
+      if (output.equals(""))
+        throw new RuntimeException("No output created by GPSBabel");
     }
     try {
       response.getWriter().write(output);
@@ -468,7 +434,82 @@ public class OxPointsQueryServlet extends HttpServlet {
 
   private String getFolderTypeUri(String propertyKey) {
     if (propertyKey == null)
-      return "http://ns.ox.ac.uk/namespace/oxpoints/2009/02/owl#College";
+      return OxPointsVocab.NS + "College";
     return getPropertyURIOrDie(propertyKey);
   }
+
+  public static  String runGPSBabel(String input, String formatIn, String formatOut) {
+    // '/usr/bin/gpsbabel -i kml -o ' . $format . ' -f ' . $In . ' -F ' . $Out;
+    if (formatIn == null)
+      formatIn = "kml";
+    if (formatOut == null) 
+      throw new IllegalArgumentException("Missing output format for GPSBabel");
+    
+    OutputStream stdin = null;
+    InputStream stderr = null;
+    InputStream stdout = null;
+    
+    String output = "";
+    String command = "/usr/bin/gpsbabel -i " + formatIn + " -o " + formatOut + " -f - -F -";  
+    Process process;
+    try {
+      process = Runtime.getRuntime().exec(command, null, null);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    try {
+      stdin = process.getOutputStream();
+
+      stdout = process.getInputStream();
+      stderr = process.getErrorStream();
+      try {
+        stdin.write(input.getBytes());
+        stdin.flush();
+        stdin.close();
+      } catch (IOException e) {
+        // clean up if any output in stderr
+        BufferedReader errBufferedReader = new BufferedReader(new InputStreamReader(stderr));
+        String stderrString = "";
+        String stderrLine = null;
+        try {
+          while ((stderrLine = errBufferedReader.readLine()) != null) {
+            System.err.println("[Stderr] " + stderrLine);
+            stderrString += stderrLine;
+          }
+          errBufferedReader.close();
+        } catch (IOException e2) {
+          throw new RuntimeException("Stderr reader failed:" + e2);
+        }
+        throw new RuntimeException("Command " + command + " gave error:\n" + stderrString);
+      }
+
+      BufferedReader brCleanUp = new BufferedReader(new InputStreamReader(
+          stdout));
+      String line;
+      try {
+        while ((line = brCleanUp.readLine()) != null) {
+          System.out.println("[Stdout] " + line);
+          output += line;
+        }
+        brCleanUp.close();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+
+      // clean up if any output in stderr
+      brCleanUp = new BufferedReader(new InputStreamReader(stderr));
+      try {
+        while ((line = brCleanUp.readLine()) != null) {
+          System.err.println("[Stderr] " + line);
+        }
+        brCleanUp.close();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    } finally {
+      process.destroy();
+    }
+    return output;
+  }
+
 }

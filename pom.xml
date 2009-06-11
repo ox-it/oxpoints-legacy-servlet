@@ -42,6 +42,12 @@
    <groupId>net.sf.gaboto</groupId>
    <artifactId>gaboto</artifactId>
    <version>0.2</version>
+   <exclusions>
+    <exclusion>
+     <groupId>xerces</groupId>
+     <artifactId>xmlParserAPIs</artifactId>
+    </exclusion>
+   </exclusions>
   </dependency>
   <dependency>
    <groupId>javax.servlet</groupId>
@@ -62,6 +68,16 @@
    <artifactId>jwebunit-htmlunit-plugin</artifactId>
    <version>1.4.1</version>
    <scope>test</scope>
+     <exclusions>
+      <exclusion>
+        <groupId>xerces</groupId>
+        <artifactId>xmlParserAPIs</artifactId>
+       </exclusion>
+      <exclusion>
+        <groupId>xml-apis</groupId>
+        <artifactId>xml-apis</artifactId>
+       </exclusion>
+      </exclusions>
   </dependency>
   <dependency>
    <groupId>xmlunit</groupId>
@@ -202,6 +218,7 @@
      <xrefLocation>xref</xrefLocation>
     </configuration>
    </plugin>
+<!--
    <plugin>
     <groupId>org.apache.maven.plugins</groupId>
     <artifactId>maven-pmd-plugin</artifactId>
@@ -218,6 +235,7 @@
      <targetJdk>1.6</targetJdk>
     </configuration>
    </plugin>
+-->
    <plugin>
     <groupId>org.codehaus.mojo</groupId>
     <artifactId>jdepend-maven-plugin</artifactId>

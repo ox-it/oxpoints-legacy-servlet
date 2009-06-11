@@ -189,11 +189,11 @@ public class OxPointsQueryServlet extends HttpServlet {
         }
       } else if (pathInfo.startsWith("/types")) {
         output(GabotoOntologyLookup.getRegisteredEntityClassesAsClassNames(),
-            request, response, format);
+            response, format);
         return;
       } else if (pathInfo.startsWith("/type/")) {
         output(GabotoOntologyLookup.getRegisteredEntityClassesAsClassNames(),
-            request, response, format);
+            response, format);
         return;
       } else
         throw new IllegalArgumentException("Unexpected path info : " + pathInfo);
@@ -266,8 +266,8 @@ public class OxPointsQueryServlet extends HttpServlet {
     return p;
   }
 
-  private void output(Collection<String> them, HttpServletRequest request,
-      HttpServletResponse response, String format) {
+  private void output(Collection<String> them, HttpServletResponse response,
+      String format) {
     try {
       if (format.equals("txt")) {
         boolean doneOne = false;
@@ -341,20 +341,22 @@ public class OxPointsQueryServlet extends HttpServlet {
     if (format.equals("kml")) {
       response.setContentType("application/vnd.google-earth.kml+xml");
       output = createKml(pool, displayParentName);
-    } else if (format.equals("json")) {
+    } else if (format.equals("json") || format.equals("js")) {
       response.setContentType("text/javascript");
       JSONPoolTransformer transformer = new JSONPoolTransformer();
       String jsonNesting = lowercaseRequestParameter(request, "jsonNesting");
       if (jsonNesting != null) {
         try {
-          int level = Integer.parseInt(jsonNesting);
-          transformer.setNesting(level);
+          int depth = Integer.parseInt(jsonNesting);
+          transformer.setNesting(depth);
         } catch (NumberFormatException e) {
           throw new IllegalArgumentException(e);
         }
       }
 
       output = transformer.transform(pool);
+      if (format.equals("js") && jsCallback == null)
+        jsCallback = "oxpoints";
       if (jsCallback != null)
         output = jsCallback + "(" + output + ");";
     } else if (format.equals("gjson")) {
@@ -473,12 +475,12 @@ public class OxPointsQueryServlet extends HttpServlet {
         String stderrLine = null;
         try {
           while ((stderrLine = errBufferedReader.readLine()) != null) {
-            System.err.println("[Stderr] " + stderrLine);
+            System.err.println("[Stderr Ex] " + stderrLine);
             stderrString += stderrLine;
           }
           errBufferedReader.close();
         } catch (IOException e2) {
-          throw new RuntimeException("Stderr reader failed:" + e2);
+          throw new RuntimeException("Command " + command + " stderr reader failed:" + e2);
         }
         throw new RuntimeException("Command " + command + " gave error:\n" + stderrString);
       }

@@ -263,21 +263,8 @@
    </plugin>
   </plugins>
  </reporting>
-     <!-- Its mirrored in maven actually -->
-     <!--repositories>
-        <repository>
-            <id>jena</id>
-            <name>Jena</name>
-            <url>http://jena.hpl.hp.com/repo</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-        </repository>
-    </repositories-->
  <distributionManagement>
+<!--
   <repository>
    <id>localhost</id>
    <name>Default Repository</name>
@@ -287,5 +274,50 @@
    <id>localhost</id>
    <url>file://localhost/var/www/${pom.artifactId}/</url>
   </site>
+   <downloadUrl>http://bogof.nsms.ox.ac.uk/maven2/</downloadUrl>
+    <repository>
+      <id>melati</id>
+      <name>melati</name>
+      <url>scp://melati.org/data/www/maven2/</url>
+    </repository>
+    <site>
+      <id>melati</id>
+      <url>scp://melati.org/data/www/uriinterface/</url>
+    </site>
+-->
+  <repository>
+   <id>bogof</id>
+   <name>bogof</name>
+   <url>scp://bogof.nsms.ox.ac.uk/home/maven2/repo/</url>
+  </repository>
+  <site>
+   <id>bogof</id>
+   <url>scp://bogof.nsms.ox.ac.uk:/home/maven2/project/${pom.artifactId}</url>
+  </site>
  </distributionManagement>
+
+
+  <repositories>
+  <!--
+    <repository>
+      <releases />
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <id>melati</id>
+      <name>Melati Repository</name>
+      <url>http://melati.org/maven2/</url>
+    </repository>
+    -->
+    <repository>
+      <releases />
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <id>bogof</id>
+      <name>bogof</name>
+      <url>http://bogof.nsms.ox.ac.uk/mvn/maven2/</url>
+    </repository>
+  </repositories>
+
 </project>

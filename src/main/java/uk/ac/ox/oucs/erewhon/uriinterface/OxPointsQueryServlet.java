@@ -205,6 +205,7 @@ public class OxPointsQueryServlet extends HttpServlet {
       String property = request.getParameter("property");
       if (type != null) {
         pool = loadPoolWithEntitiesOfType(type);
+        System.err.println("Pool has " + pool.getSize() + " elements");
       } else if (property != null) {
         pool = loadPoolWithEntitiesOfProperty(property, request
             .getParameter("value"));
@@ -251,8 +252,7 @@ public class OxPointsQueryServlet extends HttpServlet {
       if (!GabotoOntologyLookup.isValidName(t))
         throw new IllegalArgumentException("Found no URI matching type " + t);
       String typeURI = OxPointsVocab.NS +  t;
-      System.err.println("Adding:" + typeURI);
-      config.addAcceptedType(t);
+      config.addAcceptedType(typeURI);
     }
 
     return GabotoEntityPool.createFrom(config);

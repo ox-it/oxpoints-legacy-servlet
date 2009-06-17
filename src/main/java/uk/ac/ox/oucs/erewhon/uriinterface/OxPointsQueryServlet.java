@@ -68,6 +68,8 @@ import org.oucs.gaboto.vocabulary.GeoVocab;
 import org.oucs.gaboto.vocabulary.OxPointsVocab;
 import org.oucs.gaboto.vocabulary.VCard;
 
+import com.hp.hpl.jena.rdf.model.Property;
+import com.hp.hpl.jena.rdf.model.StmtIterator;
 import com.hp.hpl.jena.vocabulary.DC;
 
 /**
@@ -145,13 +147,9 @@ public class OxPointsQueryServlet extends HttpServlet {
   private String setFormatFromPathInfo(String pathInfo) {
     int dotPosition = pathInfo.indexOf('.');
     if (dotPosition == -1) {
-      format = "xml";
-    } else {
-      format = pathInfo.substring(dotPosition + 1);
-    }
-    if (dotPosition == -1) {
       return pathInfo;
     } else {
+      format = pathInfo.substring(dotPosition + 1);
       return pathInfo.substring(0, dotPosition);
     }
   }
@@ -163,6 +161,7 @@ public class OxPointsQueryServlet extends HttpServlet {
     arc = request.getParameter("arc");
     folderType = request.getParameter("folderType");
     GabotoEntityPool pool = null;
+    format = "xml";
 
     String pathInfo = request.getPathInfo();
     if (pathInfo != null) {
@@ -198,44 +197,60 @@ public class OxPointsQueryServlet extends HttpServlet {
       } else
         throw new IllegalArgumentException("Unexpected path info : " + pathInfo);
     } else {
-      format = lowercaseRequestParameter(request, "format");
-      if (format == null)
-        format = "xml";
       String type = request.getParameter("type");
       String property = request.getParameter("property");
       if (type != null) {
         pool = loadPoolWithEntitiesOfType(type);
-        System.err.println("Pool has " + pool.getSize() + " elements");
       } else if (property != null) {
-        pool = loadPoolWithEntitiesOfProperty(property, request
-            .getParameter("value"));
+        pool = loadPoolWithEntitiesOfProperty(property, 
+            request.getParameter("value"));
       } else {
         pool = GabotoEntityPool.createFrom(snapshot);
       }
     }
+    String parameterFormat = lowercaseRequestParameter(request, "format");
+    if (parameterFormat != null) { 
+      format = parameterFormat;  //NOTE This overrides format from pathinfo 
+    }
+    System.err.println("Pool has " + pool.getSize() + " elements");
     output(pool, request, response, format);
 
   }
 
 
-  private GabotoEntityPool loadPoolWithEntitiesOfProperty(String property,
-      String value) {
-    String propertyURI = getPropertyURIOrDie(property);
+  private GabotoEntityPool loadPoolWithEntitiesOfProperty(String propertyName, String value) {
+    System.err.println("Finding:" + propertyName + "='" + value + "'");
+    String propertyURI = getPropertyURIOrDie(propertyName);
 
     GabotoEntityPool pool = null;
 
+    Property property = snapshot.getProperty(propertyURI);
+    
     if (value == null) {
-      pool = snapshot.loadEntitiesWithProperty(propertyURI);
+      pool = snapshot.loadEntitiesWithProperty(property);
     } else {
 
       String values[] = value.split("[|]");
 
       pool = new GabotoEntityPool(gaboto, snapshot);
       for (String v : values) {
-        GabotoEntityPool p = snapshot.loadEntitiesWithProperty(propertyURI, v);
+        //v = "http://m.ox.ac.uk/oxpoints/id/"+v;
+        System.err.println("Finding:" + propertyURI + "=" + v);
+        System.err.println("Prop type" + property.getClass());
+        
+        for (StmtIterator them = property.listProperties(property); them.hasNext();)
+          System.err.println("Prop prop " + them.next());
+          
+        Object valueObject;
+        //if (property.isURIResource()) 
+        //  valueObject = snapshot.getResource(v);
+        //else 
+          valueObject = v;
+        GabotoEntityPool p = snapshot.loadEntitiesWithProperty(property, valueObject);
+        System.err.println("P has " + p.getSize() + " elements");
         for (GabotoEntity e : p.getEntities()) {
           pool.addEntity(e);
-          System.err.println("Adding:" + v);
+          System.err.println("Adding:" + e);
         }
       }
     }
@@ -317,6 +332,7 @@ public class OxPointsQueryServlet extends HttpServlet {
 
   private void output(GabotoEntityPool pool, HttpServletRequest request,
       HttpServletResponse response, String format) {
+    System.err.println("output.Format:" + format + ":");
     orderBy = lowercaseRequestParameter(request, "orderBy");
 
     String displayParentNameStringValue = lowercaseRequestParameter(request,
@@ -331,6 +347,7 @@ public class OxPointsQueryServlet extends HttpServlet {
         displayParentName = true;
     }
 
+    // See http://bob.pythonmac.org/archives/2005/12/05/remote-json-jsonp/
     String jsCallback = lowercaseRequestParameter(request, "jsCallback");
     // clean params
     if (jsCallback != null) {
@@ -342,6 +359,7 @@ public class OxPointsQueryServlet extends HttpServlet {
       response.setContentType("application/vnd.google-earth.kml+xml");
       output = createKml(pool, displayParentName);
     } else if (format.equals("json") || format.equals("js")) {
+      System.err.println("output.Format:" + format);
       response.setContentType("text/javascript");
       JSONPoolTransformer transformer = new JSONPoolTransformer();
       String jsonNesting = lowercaseRequestParameter(request, "jsonNesting");
@@ -365,7 +383,7 @@ public class OxPointsQueryServlet extends HttpServlet {
       if (arc != null) {
         transformer.addEntityFolderType(getFolderTypeUri(folderType),
             getPropertyURIOrDie(arc));
-      }// oxpq
+      }
       if (orderBy != null) {
         transformer.setOrderBy(getPropertyURIOrDie(orderBy));
       }
@@ -374,7 +392,7 @@ public class OxPointsQueryServlet extends HttpServlet {
       output += transformer.transform(pool);
       if (jsCallback != null)
         output = jsCallback + "(" + output + ");";
-    } else if (format.equals("xml")) { // default
+    } else if (format.equals("xml")) { 
       response.setContentType("text/xml");
 
       System.err.println("Pool has " + pool.getSize() + " elements");
@@ -392,6 +410,7 @@ public class OxPointsQueryServlet extends HttpServlet {
       if (output.equals(""))
         throw new RuntimeException("No output created by GPSBabel");
     }
+    System.err.println("output:" + output + ":");
     try {
       response.getWriter().write(output);
     } catch (IOException e) {
@@ -426,7 +445,6 @@ public class OxPointsQueryServlet extends HttpServlet {
 
   private String getPropertyURI(String propertyKey) {
     for (String prefix : namespacePrefixes.keySet()) {
-      System.err.println("Prop:" + propertyKey + ":" + prefix);
       if (propertyKey.startsWith(prefix))
         return namespacePrefixes.get(prefix)
             + propertyKey.substring(prefix.length());
@@ -453,6 +471,7 @@ public class OxPointsQueryServlet extends HttpServlet {
     
     String output = "";
     String command = "/usr/bin/gpsbabel -i " + formatIn + " -o " + formatOut + " -f - -F -";  
+    System.err.println("GPSBabel command:" + command);
     Process process;
     try {
       process = Runtime.getRuntime().exec(command, null, null);

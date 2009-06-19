@@ -70,7 +70,7 @@ import org.oucs.gaboto.vocabulary.VCard;
 
 import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.StmtIterator;
-import com.hp.hpl.jena.vocabulary.DC;
+import com.hp.hpl.jena.vocabulary.DC_11;
 
 /**
  * A servlet to interrogate the OxPoints data.
@@ -95,10 +95,10 @@ public class OxPointsQueryServlet extends HttpServlet {
       .getName());
   static Map<String, String> namespacePrefixes = new TreeMap<String, String>();
   {
-    namespacePrefixes.put("oxp:", OxPointsVocab.NS);
-    namespacePrefixes.put("dc:", DC.NS);
+    namespacePrefixes.put("oxp:",   OxPointsVocab.NS);
+    namespacePrefixes.put("dc:",    DC_11.NS);
     namespacePrefixes.put("vCard:", VCard.NS);
-    namespacePrefixes.put("geo:", GeoVocab.NS);
+    namespacePrefixes.put("geo:",   GeoVocab.NS);
   }
 
   private static Gaboto gaboto;
@@ -458,6 +458,12 @@ public class OxPointsQueryServlet extends HttpServlet {
     return getPropertyURIOrDie(propertyKey);
   }
 
+  /**
+   * @param input A String, normally kml
+   * @param formatIn format name, other than kml
+   * @param formatOut what you want out
+   * @return the reformatted String
+   */
   public static  String runGPSBabel(String input, String formatIn, String formatOut) {
     // '/usr/bin/gpsbabel -i kml -o ' . $format . ' -f ' . $In . ' -F ' . $Out;
     if (formatIn == null)

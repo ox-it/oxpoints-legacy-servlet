@@ -69,6 +69,8 @@ import org.oucs.gaboto.vocabulary.OxPointsVocab;
 import org.oucs.gaboto.vocabulary.VCard;
 
 import com.hp.hpl.jena.rdf.model.Property;
+import com.hp.hpl.jena.rdf.model.RDFNode;
+import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.StmtIterator;
 import com.hp.hpl.jena.vocabulary.DC_11;
 
@@ -232,25 +234,14 @@ public class OxPointsQueryServlet extends HttpServlet {
 
       String values[] = value.split("[|]");
 
-      pool = new GabotoEntityPool(gaboto, snapshot);
+      System.err.println("property:" + property);
       for (String v : values) {
-        //v = "http://m.ox.ac.uk/oxpoints/id/"+v;
-        System.err.println("Finding:" + propertyURI + "=" + v);
-        System.err.println("Prop type" + property.getClass());
-        
-        for (StmtIterator them = property.listProperties(property); them.hasNext();)
-          System.err.println("Prop prop " + them.next());
-          
-        Object valueObject;
-        //if (property.isURIResource()) 
-        //  valueObject = snapshot.getResource(v);
-        //else 
-          valueObject = v;
-        GabotoEntityPool p = snapshot.loadEntitiesWithProperty(property, valueObject);
-        System.err.println("P has " + p.getSize() + " elements");
-        for (GabotoEntity e : p.getEntities()) {
-          pool.addEntity(e);
-          System.err.println("Adding:" + e);
+        if (propertyName.endsWith("subsetOf")) { 
+          String vUri = config.getNSData() + v;
+          Resource r = snapshot.getResource(vUri);
+          pool = snapshot.loadEntitiesWithProperty(property, r);
+        } else  {
+          pool = snapshot.loadEntitiesWithProperty(property, v);
         }
       }
     }

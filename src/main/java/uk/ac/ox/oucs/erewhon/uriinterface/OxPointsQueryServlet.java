@@ -231,21 +231,51 @@ public class OxPointsQueryServlet extends HttpServlet {
     if (value == null) {
       pool = snapshot.loadEntitiesWithProperty(property);
     } else {
-
       String values[] = value.split("[|]");
 
-      System.err.println("property:" + property);
       for (String v : values) {
-        if (propertyName.endsWith("subsetOf")) { 
-          String vUri = config.getNSData() + v;
-          Resource r = snapshot.getResource(vUri);
-          pool = snapshot.loadEntitiesWithProperty(property, r);
+        System.err.println("property:" + property + " has value " + v);
+        if (requiresResource(property)) { 
+          pool = becomeOrAdd(pool, snapshot.loadEntitiesWithProperty(property, getResource(v)));
         } else  {
-          pool = snapshot.loadEntitiesWithProperty(property, v);
+          pool = becomeOrAdd(pool,snapshot.loadEntitiesWithProperty(property, v));
         }
       }
     }
     return pool;
+  }
+
+  private GabotoEntityPool  becomeOrAdd(GabotoEntityPool pool,
+      GabotoEntityPool poolToAdd) {
+    if (poolToAdd == null)
+      throw new NullPointerException();
+    if (pool == null)
+      return poolToAdd;
+    else {
+      for (GabotoEntity e : poolToAdd.getEntities())
+        pool.addEntity(e);
+      return pool;
+    }
+  }
+
+  private Resource getResource(String v) {
+    String vUri = config.getNSData() + v;
+    return  snapshot.getResource(vUri);
+  }
+
+  private boolean requiresResource(Property property) {
+    if (property.getLocalName().endsWith("subsetOf")) {
+      return true;
+    } else if (property.getLocalName().endsWith("physicallyContainedWithin")) {
+      return true;
+    } else if (property.getLocalName().endsWith("primaryPlace")) {
+      return true;
+    } else if (property.getLocalName().endsWith("occupies")) {
+      return true;
+    } else if (property.getLocalName().endsWith("associatedWith")) {
+      return true;
+    } else  
+    return false;
   }
 
   private GabotoEntityPool loadPoolWithEntitiesOfType(String type) {

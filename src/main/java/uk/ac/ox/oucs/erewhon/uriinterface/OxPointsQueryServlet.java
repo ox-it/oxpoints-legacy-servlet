@@ -69,9 +69,7 @@ import org.oucs.gaboto.vocabulary.OxPointsVocab;
 import org.oucs.gaboto.vocabulary.VCard;
 
 import com.hp.hpl.jena.rdf.model.Property;
-import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
-import com.hp.hpl.jena.rdf.model.StmtIterator;
 import com.hp.hpl.jena.vocabulary.DC_11;
 
 /**
@@ -86,7 +84,7 @@ import com.hp.hpl.jena.vocabulary.DC_11;
  * Format is a special case.
  * 
  * Parameters are used for qualifiers which do not effect the number of entities
- * in the the pool.
+ * in the pool.
  * 
  */
 

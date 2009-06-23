@@ -234,7 +234,9 @@ public class OxPointsQueryServlet extends HttpServlet {
       for (String v : values) {
         System.err.println("property:" + property + " has value " + v);
         if (requiresResource(property)) { 
-          pool = becomeOrAdd(pool, snapshot.loadEntitiesWithProperty(property, getResource(v)));
+          Resource r = getResource(v);
+          System.err.println("Found r: " + r);
+          pool = becomeOrAdd(pool, snapshot.loadEntitiesWithProperty(property, r));
         } else  {
           pool = becomeOrAdd(pool,snapshot.loadEntitiesWithProperty(property, v));
         }
@@ -262,6 +264,8 @@ public class OxPointsQueryServlet extends HttpServlet {
   }
 
   private boolean requiresResource(Property property) {
+    //if (property instanceof ObjectProperty)
+    //  return true;
     if (property.getLocalName().endsWith("subsetOf")) {
       return true;
     } else if (property.getLocalName().endsWith("physicallyContainedWithin")) {
@@ -272,7 +276,7 @@ public class OxPointsQueryServlet extends HttpServlet {
       return true;
     } else if (property.getLocalName().endsWith("associatedWith")) {
       return true;
-    } else  
+    } else
     return false;
   }
 

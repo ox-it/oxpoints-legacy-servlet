@@ -9,7 +9,7 @@
     
   <servlet>
     <servlet-name>OxPointsQueryServlet</servlet-name>
-    <servlet-class>uk.ac.ox.oucs.erewhon.uriinterface.OxPointsQueryServlet</servlet-class>
+    <servlet-class>uk.ac.ox.oucs.erewhon.oxpq.OxPointsQueryServlet</servlet-class>
   </servlet>
 
   <servlet-mapping>

@@ -29,7 +29,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package uk.ac.ox.oucs.erewhon.uriinterface;
+package uk.ac.ox.oucs.erewhon.oxpq;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -264,8 +264,6 @@ public class OxPointsQueryServlet extends HttpServlet {
   }
 
   private boolean requiresResource(Property property) {
-    //if (property instanceof ObjectProperty)
-    //  return true;
     if (property.getLocalName().endsWith("subsetOf")) {
       return true;
     } else if (property.getLocalName().endsWith("physicallyContainedWithin")) {

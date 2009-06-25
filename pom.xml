@@ -3,7 +3,7 @@
  <modelVersion>4.0.0</modelVersion>
 
  <groupId>uk.ac.ox.oucs.erewhon</groupId>
- <artifactId>uriinterface</artifactId>
+ <artifactId>oxpq</artifactId>
  <version>1.0.2</version>
  <packaging>war</packaging>
 

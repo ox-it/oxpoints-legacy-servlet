@@ -77,8 +77,7 @@ import com.hp.hpl.jena.vocabulary.DC_11;
  * A servlet to interrogate the OxPoints data.
  * 
  * Try invoking with
- * http://127.0.0.1:8080/oxp/OxPointsQueryServlet?property=oxp:
- * hasOUCSCode&value=oucs&format=kml
+ * http://127.0.0.1:8080/oxp/OxPointsQueryServlet/type/College.kml
  * 
  * Slashes are like dots in a method invocation.
  * 
@@ -96,10 +95,11 @@ public class OxPointsQueryServlet extends HttpServlet {
       .getName());
   static Map<String, String> namespacePrefixes = new TreeMap<String, String>();
   {
-    namespacePrefixes.put("oxp:",   OxPointsVocab.NS);
-    namespacePrefixes.put("dc:",    DC_11.NS);
-    namespacePrefixes.put("vCard:", VCard.NS);
-    namespacePrefixes.put("geo:",   GeoVocab.NS);
+    // HACK the ordering so that oxpoints#subsetOf is prioritised over DC#subsetOf
+    namespacePrefixes.put("1oxp:",   OxPointsVocab.NS);
+    namespacePrefixes.put("2dc:",    DC_11.NS);
+    namespacePrefixes.put("3vCard:", VCard.NS);
+    namespacePrefixes.put("4geo:",   GeoVocab.NS);
   }
 
   private static Gaboto gaboto;
@@ -120,8 +120,8 @@ public class OxPointsQueryServlet extends HttpServlet {
   String arc = null;
   String orderBy = null;
   String folderType = null;
-  String property = null;
-  String value = null;
+  String propertyName = null;
+  String propertyValue = null;
   boolean displayParentName;
   int jsonDepth = 1;
 
@@ -203,12 +203,14 @@ public class OxPointsQueryServlet extends HttpServlet {
       } else if (pathInfo.startsWith("/type/")) {  
         String type = pathInfo.substring(6);
         pool = loadPoolWithEntitiesOfType(type);
+      } else if (startsWithPropertyName(pathInfo)) {  
+        pool = loadPoolWithEntitiesOfProperty(getProperty(pathInfo), getPropertyValue(pathInfo));
       } else
         throw new IllegalArgumentException("Unexpected path info : " + pathInfo);
     } else {
-      System.err.println("Property " + property);
-      if (property != null) {
-        pool = loadPoolWithEntitiesOfProperty(property, value);
+      System.err.println("Property " + propertyName);
+      if (propertyName != null) {
+        pool = loadPoolWithEntitiesOfProperty(propertyName, propertyValue);
       } else {
         pool = GabotoEntityPool.createFrom(snapshot);
       }
@@ -217,6 +219,46 @@ public class OxPointsQueryServlet extends HttpServlet {
     output(pool, request, response, format);
 
   }
+
+  private boolean startsWithPropertyName(String pathInfo) {
+    return getPropertyName(pathInfo) != null;
+  }
+  private Property getProperty(String pathInfo) { 
+    String[] tokens = getTokens(pathInfo);
+    return getPropertyFromAbreviation(tokens[0]); 
+  }
+  private String getPropertyName(String pathInfo) {
+    String[] tokens = getTokens(pathInfo);
+    System.err.println("Token:" + tokens[0]);
+    if (getPropertyFromAbreviation(tokens[0]) != null)
+      return tokens[0];
+    else 
+      return null;
+  }
+  private String getPropertyValue(String pathInfo) {
+    String[] tokens = getTokens(pathInfo);
+    if (tokens.length == 1)
+      return null;
+    return tokens[1];
+  }
+  
+  private String[] getTokens(String pathInfo) { 
+    if (pathInfo == null) 
+      return null;
+    if (pathInfo.equals("")) 
+      return null;
+    if (pathInfo.equals("/")) 
+      return null;
+    if (!pathInfo.startsWith("/")) 
+      throw new IllegalArgumentException("Unexpected pathInfo:" + pathInfo);
+    
+    String trimmedPathInfo = pathInfo.substring(1,pathInfo.length());
+    if (trimmedPathInfo.length() == 0)
+      return null;
+    
+    return trimmedPathInfo.split("/");
+  }
+
 
   /**
    * @param request
@@ -228,8 +270,8 @@ public class OxPointsQueryServlet extends HttpServlet {
     arc = null;
     orderBy = null;
     folderType = null;
-    property = null;
-    value = null;
+    propertyName = null;
+    propertyValue = null;
     displayParentName = true;
     jsonDepth = 1;
 
@@ -244,9 +286,9 @@ public class OxPointsQueryServlet extends HttpServlet {
       else if (pName.equals("folderType"))
         folderType = pValue;
       else if (pName.equals("property"))
-        property = pValue;
+        propertyName = pValue;
       else if (pName.equals("value"))
-        value = pValue;
+        propertyValue = pValue;
       else if (pName.equals("format"))
         format = pValue;
       else if (pName.equals("orderBy"))
@@ -269,40 +311,39 @@ public class OxPointsQueryServlet extends HttpServlet {
   }
 
 
-  private GabotoEntityPool loadPoolWithEntitiesOfProperty(String propertyName, String value) {
-    System.err.println("Finding:" + propertyName + "='" + value + "'");
-    String propertyURI = getPropertyURIOrDie(propertyName);
+  private GabotoEntityPool loadPoolWithEntitiesOfProperty(String propName, String value) {
+    return loadPoolWithEntitiesOfProperty(snapshot.getProperty(getPropertyURIOrDie(propName)), value);
+  }
 
+  private GabotoEntityPool loadPoolWithEntitiesOfProperty(Property prop, String value) {
     GabotoEntityPool pool = null;
-
-    Property property = snapshot.getProperty(propertyURI);
-    
     if (value == null) {
-      pool = snapshot.loadEntitiesWithProperty(property);
+      pool = snapshot.loadEntitiesWithProperty(prop);
     } else {
       String values[] = value.split("[|]");
 
       for (String v : values) {
-        System.err.println("property:" + property + " has value " + v);
-        if (requiresResource(property)) { 
+        if (requiresResource(prop)) { 
           Resource r = getResource(v);
-          System.err.println("Found r: " + r);
-          pool = becomeOrAdd(pool, snapshot.loadEntitiesWithProperty(property, r));
+          System.err.println("Found r: " + r + " for prop " + prop);
+          pool = becomeOrAdd(pool, snapshot.loadEntitiesWithProperty(prop, r));
         } else  {
-          pool = becomeOrAdd(pool,snapshot.loadEntitiesWithProperty(property, v));
+          pool = becomeOrAdd(pool,snapshot.loadEntitiesWithProperty(prop, v));
         }
       }
     }
     return pool;
   }
 
-  private GabotoEntityPool  becomeOrAdd(GabotoEntityPool pool,
-      GabotoEntityPool poolToAdd) {
+  private GabotoEntityPool  
+  becomeOrAdd(GabotoEntityPool pool, GabotoEntityPool poolToAdd) {
     if (poolToAdd == null)
       throw new NullPointerException();
-    if (pool == null)
+    if (pool == null) {
+      System.err.println("Returning new");
       return poolToAdd;
-    else {
+    } else {
+      System.err.println("Returning added");
       for (GabotoEntity e : poolToAdd.getEntities())
         pool.addEntity(e);
       return pool;
@@ -333,15 +374,15 @@ public class OxPointsQueryServlet extends HttpServlet {
     System.err.println("Type:" + type);
     String types[] = type.split("[|]");
 
-    GabotoEntityPoolConfiguration config = new GabotoEntityPoolConfiguration(snapshot);
+    GabotoEntityPoolConfiguration conf = new GabotoEntityPoolConfiguration(snapshot);
     for (String t : types) {
       if (!GabotoOntologyLookup.isValidName(t))
         throw new IllegalArgumentException("Found no URI matching type " + t);
       String typeURI = OxPointsVocab.NS +  t;
-      config.addAcceptedType(typeURI);
+      conf.addAcceptedType(typeURI);
     }
 
-    return GabotoEntityPool.createFrom(config);
+    return GabotoEntityPool.createFrom(conf);
   }
   
   private void output(Collection<String> them, HttpServletResponse response,
@@ -451,7 +492,7 @@ public class OxPointsQueryServlet extends HttpServlet {
     }
   }
 
-  private String createKml(GabotoEntityPool pool, boolean displayParentName) {
+  private String createKml(GabotoEntityPool pool, boolean displayParentNameP) {
     String output;
     KMLPoolTransformer transformer = new KMLPoolTransformer();
     if (arc != null) {
@@ -462,7 +503,7 @@ public class OxPointsQueryServlet extends HttpServlet {
     if (orderBy != null) {
       transformer.setOrderBy(getPropertyURIOrDie(orderBy));
     }
-    transformer.setDisplayParentName(displayParentName);
+    transformer.setDisplayParentName(displayParentNameP);
 
     output = transformer.transform(pool);
     return output;
@@ -476,11 +517,22 @@ public class OxPointsQueryServlet extends HttpServlet {
     return returnString;
   }
 
+  private Property getPropertyFromAbreviation(String propertyAbreviation) {
+    for (String prefix : namespacePrefixes.keySet()) {
+      String key = namespacePrefixes.get(prefix) + propertyAbreviation;
+      Property p = snapshot.getProperty(key);
+      if (p != null)
+        return p; 
+    }
+    return null;
+  }
+
   private String getPropertyURI(String propertyKey) {
     for (String prefix : namespacePrefixes.keySet()) {
-      if (propertyKey.startsWith(prefix))
+      String key = prefix.substring(1);
+      if (propertyKey.startsWith(key))
         return namespacePrefixes.get(prefix)
-            + propertyKey.substring(prefix.length());
+            + propertyKey.substring(key.length());
     }
     return null;
   }

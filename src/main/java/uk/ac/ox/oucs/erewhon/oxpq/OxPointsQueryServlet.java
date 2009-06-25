@@ -38,6 +38,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.Enumeration;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -109,10 +110,20 @@ public class OxPointsQueryServlet extends HttpServlet {
 
   private static Calendar startTime;
 
+  // See http://bob.pythonmac.org/archives/2005/12/05/remote-json-jsonp/
+  // No facility to alter this
+  String jsCallback = "oxpoints";
+
+  
+  String format = "xml";
+
   String arc = null;
-  String format = null;
   String orderBy = null;
   String folderType = null;
+  String property = null;
+  String value = null;
+  boolean displayParentName;
+  int jsonDepth = 1;
 
   public void init() {
     logger.debug("init");
@@ -158,10 +169,9 @@ public class OxPointsQueryServlet extends HttpServlet {
    */
   @Override
   public void doGet(HttpServletRequest request, HttpServletResponse response) {
-    arc = request.getParameter("arc");
-    folderType = request.getParameter("folderType");
+    setParameters(request);
+    
     GabotoEntityPool pool = null;
-    format = "xml";
 
     String pathInfo = request.getPathInfo();
     if (pathInfo != null) {
@@ -190,31 +200,72 @@ public class OxPointsQueryServlet extends HttpServlet {
         output(GabotoOntologyLookup.getRegisteredEntityClassesAsClassNames(),
             response, format);
         return;
-      } else if (pathInfo.startsWith("/type/")) {
-        output(GabotoOntologyLookup.getRegisteredEntityClassesAsClassNames(),
-            response, format);
-        return;
+      } else if (pathInfo.startsWith("/type/")) {  
+        String type = pathInfo.substring(6);
+        pool = loadPoolWithEntitiesOfType(type);
       } else
         throw new IllegalArgumentException("Unexpected path info : " + pathInfo);
     } else {
-      String type = request.getParameter("type");
-      String property = request.getParameter("property");
-      if (type != null) {
-        pool = loadPoolWithEntitiesOfType(type);
-      } else if (property != null) {
-        pool = loadPoolWithEntitiesOfProperty(property, 
-            request.getParameter("value"));
+      System.err.println("Property " + property);
+      if (property != null) {
+        pool = loadPoolWithEntitiesOfProperty(property, value);
       } else {
         pool = GabotoEntityPool.createFrom(snapshot);
       }
     }
-    String parameterFormat = lowercaseRequestParameter(request, "format");
-    if (parameterFormat != null) { 
-      format = parameterFormat;  //NOTE This overrides format from pathinfo 
-    }
     System.err.println("Pool has " + pool.getSize() + " elements");
     output(pool, request, response, format);
 
+  }
+
+  /**
+   * @param request
+   */
+  @SuppressWarnings("unchecked")
+  private void setParameters(HttpServletRequest request) {
+    format = "xml";
+
+    arc = null;
+    orderBy = null;
+    folderType = null;
+    property = null;
+    value = null;
+    displayParentName = true;
+    jsonDepth = 1;
+
+    Enumeration<String> en = request.getParameterNames();
+    while (en.hasMoreElements()) {
+      String pName = en.nextElement();
+      String pValue =  request.getParameter(pName);
+
+      System.err.println("Param:" + pName + "=" + pValue);
+      if (pName.equals("arc"))
+        arc = pValue;
+      else if (pName.equals("folderType"))
+        folderType = pValue;
+      else if (pName.equals("property"))
+        property = pValue;
+      else if (pName.equals("value"))
+        value = pValue;
+      else if (pName.equals("format"))
+        format = pValue;
+      else if (pName.equals("orderBy"))
+        orderBy = pValue;
+      else if (pName.equals("parentName")) {
+        if (pValue.equalsIgnoreCase("false")) 
+          displayParentName = false;
+      }
+      else if (pName.equals("jsonNesting")) {
+        if (pValue != null) {
+          try {
+            jsonDepth = Integer.parseInt(pValue);
+          } catch (NumberFormatException e) {
+            throw new IllegalArgumentException(e);
+          }
+        }
+      } else throw new IllegalArgumentException(
+          "Unrecognised parameter " + pName + ":" + request.getParameter(pName));
+    }
   }
 
 
@@ -282,8 +333,7 @@ public class OxPointsQueryServlet extends HttpServlet {
     System.err.println("Type:" + type);
     String types[] = type.split("[|]");
 
-    GabotoEntityPoolConfiguration config = new GabotoEntityPoolConfiguration(
-        snapshot);
+    GabotoEntityPoolConfiguration config = new GabotoEntityPoolConfiguration(snapshot);
     for (String t : types) {
       if (!GabotoOntologyLookup.isValidName(t))
         throw new IllegalArgumentException("Found no URI matching type " + t);
@@ -293,15 +343,7 @@ public class OxPointsQueryServlet extends HttpServlet {
 
     return GabotoEntityPool.createFrom(config);
   }
-
-  private String lowercaseRequestParameter(HttpServletRequest request,
-      String name) {
-    String p = request.getParameter(name);
-    if (p != null)
-      p = p.toLowerCase();
-    return p;
-  }
-
+  
   private void output(Collection<String> them, HttpServletResponse response,
       String format) {
     try {
@@ -345,7 +387,7 @@ public class OxPointsQueryServlet extends HttpServlet {
         response.getWriter().write("</c>");
         response.getWriter().write("\n");
       } else
-        throw new IllegalArgumentException("Unexpeted format " + format);
+        throw new IllegalArgumentException("Unexpected format " + format);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -354,26 +396,7 @@ public class OxPointsQueryServlet extends HttpServlet {
   private void output(GabotoEntityPool pool, HttpServletRequest request,
       HttpServletResponse response, String format) {
     System.err.println("output.Format:" + format + ":");
-    orderBy = lowercaseRequestParameter(request, "orderBy");
 
-    String displayParentNameStringValue = lowercaseRequestParameter(request,
-        "parentName");
-    boolean displayParentName;
-    if (displayParentNameStringValue == null) {
-      displayParentName = true;
-    } else {
-      if (displayParentNameStringValue.equals("false"))
-        displayParentName = false;
-      else
-        displayParentName = true;
-    }
-
-    // See http://bob.pythonmac.org/archives/2005/12/05/remote-json-jsonp/
-    String jsCallback = lowercaseRequestParameter(request, "jsCallback");
-    // clean params
-    if (jsCallback != null) {
-      jsCallback = jsCallback.replaceAll("[^a-zA-Z0-9_]", "");
-    }
 
     String output = "";
     if (format.equals("kml")) {
@@ -383,20 +406,10 @@ public class OxPointsQueryServlet extends HttpServlet {
       System.err.println("output.Format:" + format);
       response.setContentType("text/javascript");
       JSONPoolTransformer transformer = new JSONPoolTransformer();
-      String jsonNesting = lowercaseRequestParameter(request, "jsonNesting");
-      if (jsonNesting != null) {
-        try {
-          int depth = Integer.parseInt(jsonNesting);
-          transformer.setNesting(depth);
-        } catch (NumberFormatException e) {
-          throw new IllegalArgumentException(e);
-        }
-      }
+      transformer.setNesting(jsonDepth);
 
       output = transformer.transform(pool);
-      if (format.equals("js") && jsCallback == null)
-        jsCallback = "oxpoints";
-      if (jsCallback != null)
+      if (format.equals("js"))
         output = jsCallback + "(" + output + ");";
     } else if (format.equals("gjson")) {
       response.setContentType("text/javascript");
@@ -411,8 +424,8 @@ public class OxPointsQueryServlet extends HttpServlet {
       transformer.setDisplayParentName(displayParentName);
 
       output += transformer.transform(pool);
-      if (jsCallback != null)
-        output = jsCallback + "(" + output + ");";
+      
+      output = jsCallback + "(" + output + ");";
     } else if (format.equals("xml")) { 
       response.setContentType("text/xml");
 
@@ -422,7 +435,6 @@ public class OxPointsQueryServlet extends HttpServlet {
         transformer = RDFPoolTransformerFactory
             .getRDFPoolTransformer(GabotoQuery.FORMAT_RDF_XML_ABBREV);
         output = transformer.transform(pool);
-        // System.err.println(output);
       } catch (UnsupportedFormatException e) {
         throw new IllegalArgumentException(e);
       }
@@ -431,7 +443,7 @@ public class OxPointsQueryServlet extends HttpServlet {
       if (output.equals(""))
         throw new RuntimeException("No output created by GPSBabel");
     }
-    System.err.println("output:" + output + ":");
+    //System.err.println("output:" + output + ":");
     try {
       response.getWriter().write(output);
     } catch (IOException e) {

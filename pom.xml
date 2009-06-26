@@ -309,7 +309,7 @@
 
 
   <repositories>
-  <!--
+<!--
     <repository>
       <releases />
       <snapshots>
@@ -319,7 +319,7 @@
       <name>Melati Repository</name>
       <url>http://melati.org/maven2/</url>
     </repository>
-    -->
+
     <repository>
       <releases />
       <snapshots>
@@ -329,6 +329,7 @@
       <name>bogof</name>
       <url>http://bogof.nsms.ox.ac.uk/mvn/maven2/</url>
     </repository>
+-->
   </repositories>
 
 </project>

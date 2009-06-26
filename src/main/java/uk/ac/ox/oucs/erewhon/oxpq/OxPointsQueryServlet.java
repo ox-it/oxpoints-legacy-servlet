@@ -65,13 +65,19 @@ import org.oucs.gaboto.model.GabotoSnapshot;
 import org.oucs.gaboto.model.query.GabotoQuery;
 import org.oucs.gaboto.timedim.TimeInstant;
 import org.oucs.gaboto.util.GabotoOntologyLookup;
+import org.oucs.gaboto.vocabulary.DC;
+import org.oucs.gaboto.vocabulary.GabotoKML;
+import org.oucs.gaboto.vocabulary.GabotoVocab;
 import org.oucs.gaboto.vocabulary.GeoVocab;
 import org.oucs.gaboto.vocabulary.OxPointsVocab;
+import org.oucs.gaboto.vocabulary.RDFCON;
+import org.oucs.gaboto.vocabulary.RDFG;
+import org.oucs.gaboto.vocabulary.TimeVocab;
 import org.oucs.gaboto.vocabulary.VCard;
 
+import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.Resource;
-import com.hp.hpl.jena.vocabulary.DC_11;
 
 /**
  * A servlet to interrogate the OxPoints data.
@@ -97,7 +103,7 @@ public class OxPointsQueryServlet extends HttpServlet {
   {
     // HACK the ordering so that oxpoints#subsetOf is prioritised over DC#subsetOf
     namespacePrefixes.put("1oxp:",   OxPointsVocab.NS);
-    namespacePrefixes.put("2dc:",    DC_11.NS);
+    namespacePrefixes.put("2dc:",    DC.NS);
     namespacePrefixes.put("3vCard:", VCard.NS);
     namespacePrefixes.put("4geo:",   GeoVocab.NS);
   }
@@ -111,10 +117,7 @@ public class OxPointsQueryServlet extends HttpServlet {
   private static Calendar startTime;
 
   // See http://bob.pythonmac.org/archives/2005/12/05/remote-json-jsonp/
-  // No facility to alter this
   String jsCallback = "oxpoints";
-
-  
   String format = "xml";
 
   String arc = null;
@@ -122,17 +125,14 @@ public class OxPointsQueryServlet extends HttpServlet {
   String folderType = null;
   String propertyName = null;
   String propertyValue = null;
+  
   boolean displayParentName;
   int jsonDepth = 1;
 
   public void init() {
     logger.debug("init");
-    // load Gaboto
-    try {
-      config = GabotoConfiguration.fromConfigFile();
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+    config = GabotoConfiguration.fromConfigFile();
+
     GabotoLibrary.init(config);
     gaboto = GabotoFactory.getEmptyInMemoryGaboto();
 
@@ -171,8 +171,6 @@ public class OxPointsQueryServlet extends HttpServlet {
   public void doGet(HttpServletRequest request, HttpServletResponse response) {
     setParameters(request);
     
-    GabotoEntityPool pool = null;
-
     String pathInfo = request.getPathInfo();
     if (pathInfo != null) {
       pathInfo = setFormatFromPathInfo(pathInfo);
@@ -184,39 +182,34 @@ public class OxPointsQueryServlet extends HttpServlet {
         } catch (IOException e) {
           throw new RuntimeException(e);
         }
+      } else if (pathInfo.startsWith("/types")) {
+        output(GabotoOntologyLookup.getRegisteredEntityClassesAsClassNames(),
+            response);
+        return;
       } else if (pathInfo.startsWith("/all")) {
-        pool = GabotoEntityPool.createFrom(snapshot);
+        output(GabotoEntityPool.createFrom(snapshot), response);
       } else if (pathInfo.startsWith("/id/")) {
 
         String id = pathInfo.substring(4);
         String uri = config.getNSData() + id;
-        pool = new GabotoEntityPool(gaboto, snapshot);
+        GabotoEntityPool pool = new GabotoEntityPool(gaboto, snapshot);
         try {
           pool.addEntity(snapshot.loadEntity(uri));
         } catch (ResourceDoesNotExistException e) {
           throw new RuntimeException("Resource not found with uri " + uri, e);
         }
-      } else if (pathInfo.startsWith("/types")) {
-        output(GabotoOntologyLookup.getRegisteredEntityClassesAsClassNames(),
-            response, format);
-        return;
+        output(pool, response);
       } else if (pathInfo.startsWith("/type/")) {  
         String type = pathInfo.substring(6);
-        pool = loadPoolWithEntitiesOfType(type);
-      } else if (startsWithPropertyName(pathInfo)) {  
-        pool = loadPoolWithEntitiesOfProperty(getProperty(pathInfo), getPropertyValue(pathInfo));
+        output(loadPoolWithEntitiesOfType(type), response);
+      } else if (startsWithPropertyName(pathInfo)) {
+        System.err.println("Here");
+        output(loadPoolWithEntitiesOfProperty(getProperty(pathInfo), getPropertyValue(pathInfo)), response);
       } else
-        throw new IllegalArgumentException("Unexpected path info : " + pathInfo);
+        throw new IllegalArgumentException("Unexpected path info " + pathInfo);
     } else {
-      System.err.println("Property " + propertyName);
-      if (propertyName != null) {
-        pool = loadPoolWithEntitiesOfProperty(propertyName, propertyValue);
-      } else {
-        pool = GabotoEntityPool.createFrom(snapshot);
-      }
+      throw new NullPointerException("Expected path info");
     }
-    System.err.println("Pool has " + pool.getSize() + " elements");
-    output(pool, request, response, format);
 
   }
 
@@ -239,7 +232,7 @@ public class OxPointsQueryServlet extends HttpServlet {
     String[] tokens = getTokens(pathInfo);
     if (tokens.length == 1)
       return null;
-    return tokens[1];
+    return tokens[1].replace('+', ' ');
   }
   
   private String[] getTokens(String pathInfo) { 
@@ -266,6 +259,7 @@ public class OxPointsQueryServlet extends HttpServlet {
   @SuppressWarnings("unchecked")
   private void setParameters(HttpServletRequest request) {
     format = "xml";
+    jsCallback = "oxpoints";
 
     arc = null;
     orderBy = null;
@@ -293,6 +287,8 @@ public class OxPointsQueryServlet extends HttpServlet {
         format = pValue;
       else if (pName.equals("orderBy"))
         orderBy = pValue;
+      else if (pName.equals("jsCallback"))
+        jsCallback = pValue;
       else if (pName.equals("parentName")) {
         if (pValue.equalsIgnoreCase("false")) 
           displayParentName = false;
@@ -310,10 +306,6 @@ public class OxPointsQueryServlet extends HttpServlet {
     }
   }
 
-
-  private GabotoEntityPool loadPoolWithEntitiesOfProperty(String propName, String value) {
-    return loadPoolWithEntitiesOfProperty(snapshot.getProperty(getPropertyURIOrDie(propName)), value);
-  }
 
   private GabotoEntityPool loadPoolWithEntitiesOfProperty(Property prop, String value) {
     GabotoEntityPool pool = null;
@@ -366,7 +358,7 @@ public class OxPointsQueryServlet extends HttpServlet {
       return true;
     } else if (property.getLocalName().endsWith("associatedWith")) {
       return true;
-    } else
+    }
     return false;
   }
 
@@ -385,8 +377,7 @@ public class OxPointsQueryServlet extends HttpServlet {
     return GabotoEntityPool.createFrom(conf);
   }
   
-  private void output(Collection<String> them, HttpServletResponse response,
-      String format) {
+  private void output(Collection<String> them, HttpServletResponse response) {
     try {
       if (format.equals("txt")) {
         boolean doneOne = false;
@@ -434,8 +425,8 @@ public class OxPointsQueryServlet extends HttpServlet {
     }
   }
 
-  private void output(GabotoEntityPool pool, HttpServletRequest request,
-      HttpServletResponse response, String format) {
+  private void output(GabotoEntityPool pool, HttpServletResponse response) {
+    System.err.println("Pool has " + pool.getSize() + " elements");
     System.err.println("output.Format:" + format + ":");
 
 
@@ -519,12 +510,20 @@ public class OxPointsQueryServlet extends HttpServlet {
 
   private Property getPropertyFromAbreviation(String propertyAbreviation) {
     for (String prefix : namespacePrefixes.keySet()) {
+      System.err.println("Que:"+prefix);
       String key = namespacePrefixes.get(prefix) + propertyAbreviation;
-      Property p = snapshot.getProperty(key);
+      Property p = checkedProperty(key);
+      System.err.println("Que:"+prefix + "=" + p);
       if (p != null)
         return p; 
     }
     return null;
+  }
+  private Property checkedProperty(String propertyURI) {
+    if (isValidPropertyName(propertyURI))
+      return snapshot.getModel().getProperty(propertyURI) ;
+    else 
+      return null;
   }
 
   private String getPropertyURI(String propertyKey) {
@@ -624,4 +623,26 @@ public class OxPointsQueryServlet extends HttpServlet {
     return output;
   }
 
+  
+  boolean isValidPropertyName(String pName) { 
+    if (OxPointsVocab.MODEL.getObjectProperty(pName) != null)
+      return true;
+    if (VCard.MODEL.getObjectProperty(pName) != null)
+      return true;    
+    if (GabotoVocab.MODEL.getObjectProperty(pName) != null)
+      return true;
+    if (GabotoKML.MODEL.getObjectProperty(pName) != null)
+      return true;    
+    if (GeoVocab.MODEL.getObjectProperty(pName) != null)
+      return true;    
+    if (DC.MODEL.getObjectProperty(pName) != null)
+      return true;    
+    if (RDFCON.MODEL.getObjectProperty(pName) != null)
+      return true;    
+    if (RDFG.MODEL.getObjectProperty(pName) != null)
+      return true;    
+    if (TimeVocab.MODEL.getObjectProperty(pName) != null)
+      return true;    
+    return false;
+  }
 }

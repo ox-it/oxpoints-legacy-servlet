@@ -1,6 +1,6 @@
 <projectDescription>
-  <name>uriinterface</name>
-  <comment>Oxpoints URI Interface</comment>
+  <name>oxpq</name>
+  <comment>A servlet to query the OxPoints graph.</comment>
   <projects>
     <project>gaboto</project>
   </projects>

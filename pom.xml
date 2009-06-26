@@ -7,10 +7,10 @@
  <version>1.0.2</version>
  <packaging>war</packaging>
 
- <name>OxPoints URI Interface</name>
+ <name>OxPoints query</name>
  <inceptionYear>2009</inceptionYear>
  <description>
-   Oxpoints URI Interface
+   A servlet to query the OxPoints graph.
   </description>
 
  <organization>

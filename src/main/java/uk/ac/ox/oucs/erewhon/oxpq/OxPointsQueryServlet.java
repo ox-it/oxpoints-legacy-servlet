@@ -75,7 +75,6 @@ import org.oucs.gaboto.vocabulary.RDFG;
 import org.oucs.gaboto.vocabulary.TimeVocab;
 import org.oucs.gaboto.vocabulary.VCard;
 
-import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.Resource;
 
@@ -117,9 +116,9 @@ public class OxPointsQueryServlet extends HttpServlet {
   private static Calendar startTime;
 
   // See http://bob.pythonmac.org/archives/2005/12/05/remote-json-jsonp/
-  String jsCallback = "oxpoints";
   String format = "xml";
 
+  String jsCallback = null;
   String arc = null;
   String orderBy = null;
   String folderType = null;
@@ -182,7 +181,7 @@ public class OxPointsQueryServlet extends HttpServlet {
         } catch (IOException e) {
           throw new RuntimeException(e);
         }
-      } else if (pathInfo.startsWith("/types")) {
+      } else if (pathInfo.startsWith("/types") || pathInfo.startsWith("/classess")) {
         output(GabotoOntologyLookup.getRegisteredEntityClassesAsClassNames(),
             response);
         return;
@@ -199,7 +198,7 @@ public class OxPointsQueryServlet extends HttpServlet {
           throw new RuntimeException("Resource not found with uri " + uri, e);
         }
         output(pool, response);
-      } else if (pathInfo.startsWith("/type/")) {  
+      } else if (pathInfo.startsWith("/type/") || pathInfo.startsWith("/class/")) {  
         String type = pathInfo.substring(6);
         output(loadPoolWithEntitiesOfType(type), response);
       } else if (startsWithPropertyName(pathInfo)) {
@@ -259,7 +258,6 @@ public class OxPointsQueryServlet extends HttpServlet {
   @SuppressWarnings("unchecked")
   private void setParameters(HttpServletRequest request) {
     format = "xml";
-    jsCallback = "oxpoints";
 
     arc = null;
     orderBy = null;
@@ -283,8 +281,6 @@ public class OxPointsQueryServlet extends HttpServlet {
         propertyName = pValue;
       else if (pName.equals("value"))
         propertyValue = pValue;
-      else if (pName.equals("format"))
-        format = pValue;
       else if (pName.equals("orderBy"))
         orderBy = pValue;
       else if (pName.equals("jsCallback"))
@@ -352,7 +348,7 @@ public class OxPointsQueryServlet extends HttpServlet {
       return true;
     } else if (property.getLocalName().endsWith("physicallyContainedWithin")) {
       return true;
-    } else if (property.getLocalName().endsWith("primaryPlace")) {
+    } else if (property.getLocalName().endsWith("hasPrimaryPlace")) {
       return true;
     } else if (property.getLocalName().endsWith("occupies")) {
       return true;
@@ -435,14 +431,18 @@ public class OxPointsQueryServlet extends HttpServlet {
       response.setContentType("application/vnd.google-earth.kml+xml");
       output = createKml(pool, displayParentName);
     } else if (format.equals("json") || format.equals("js")) {
+
       System.err.println("output.Format:" + format);
       response.setContentType("text/javascript");
       JSONPoolTransformer transformer = new JSONPoolTransformer();
       transformer.setNesting(jsonDepth);
 
       output = transformer.transform(pool);
-      if (format.equals("js"))
+      if (format.equals("js")) {
+        if (jsCallback == null)
+          jsCallback = "oxpoints";
         output = jsCallback + "(" + output + ");";
+      }
     } else if (format.equals("gjson")) {
       response.setContentType("text/javascript");
       GeoJSONPoolTransfomer transformer = new GeoJSONPoolTransfomer();
@@ -456,8 +456,8 @@ public class OxPointsQueryServlet extends HttpServlet {
       transformer.setDisplayParentName(displayParentName);
 
       output += transformer.transform(pool);
-      
-      output = jsCallback + "(" + output + ");";
+      if (jsCallback != null)
+        output = jsCallback + "(" + output + ");";
     } else if (format.equals("xml")) { 
       response.setContentType("text/xml");
 

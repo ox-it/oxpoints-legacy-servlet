@@ -400,7 +400,7 @@ public class OxPointsQueryServlet extends HttpServlet {
       transformer.setNesting(query.getJsonDepth());
 
       output = transformer.transform(pool);
-      if (query.getFormat().equals("js") || query.getFormat().equals("gjson")) {
+      if (query.getFormat().equals("js")) {
         if (query.getJsCallback() == null)
           query.setJsCallback("oxpoints");
         output = query.getJsCallback() + "(" + output + ");";
@@ -418,8 +418,8 @@ public class OxPointsQueryServlet extends HttpServlet {
       transformer.setDisplayParentName(query.getDisplayParentName());
 
       output += transformer.transform(pool);
-      if (query.getJsCallback() != null)
-        output = query.getJsCallback() + "(" + output + ");";
+      query.setJsCallback("oxpoints");
+      output = query.getJsCallback() + "(" + output + ");";
       response.setContentType("text/javascript");
     } else if (query.getFormat().equals("xml")) { 
 

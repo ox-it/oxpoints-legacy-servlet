@@ -143,6 +143,7 @@ public class OxPointsQueryServlet extends HttpServlet {
   }
 
   void error(HttpServletRequest request, HttpServletResponse response, AnticipatedException exception) {
+    response.setContentType("text/html");
     PrintWriter out = null;
     try {
       out = response.getWriter();
@@ -391,12 +392,11 @@ public class OxPointsQueryServlet extends HttpServlet {
 
     String output = "";
     if (query.getFormat().equals("kml")) {
-      response.setContentType("application/vnd.google-earth.kml+xml");
       output = createKml(pool, query);
+      response.setContentType("application/vnd.google-earth.kml+xml");
     } else if (query.getFormat().equals("json") || query.getFormat().equals("js")) {
 
       System.err.println("output.Format:" + query.getFormat());
-      response.setContentType("text/javascript");
       JSONPoolTransformer transformer = new JSONPoolTransformer();
       transformer.setNesting(query.getJsonDepth());
 
@@ -406,8 +406,8 @@ public class OxPointsQueryServlet extends HttpServlet {
           query.setJsCallback("oxpoints");
         output = query.getJsCallback() + "(" + output + ");";
       }
-    } else if (query.getFormat().equals("gjson")) {
       response.setContentType("text/javascript");
+    } else if (query.getFormat().equals("gjson")) {
       GeoJSONPoolTransfomer transformer = new GeoJSONPoolTransfomer();
       if (query.getArc() != null) {
         transformer.addEntityFolderType(getFolderTypeUri(query.getFolderType()),
@@ -421,8 +421,8 @@ public class OxPointsQueryServlet extends HttpServlet {
       output += transformer.transform(pool);
       if (query.getJsCallback() != null)
         output = query.getJsCallback() + "(" + output + ");";
+      response.setContentType("text/javascript");
     } else if (query.getFormat().equals("xml")) { 
-      response.setContentType("text/xml");
 
       System.err.println("Pool has " + pool.getSize() + " elements");
       EntityPoolTransformer transformer;
@@ -433,6 +433,7 @@ public class OxPointsQueryServlet extends HttpServlet {
       } catch (UnsupportedFormatException e) {
         throw new IllegalArgumentException(e);
       }
+      response.setContentType("text/xml");
     } else {
       output = runGPSBabel(createKml(pool, query), "kml", query.getFormat());
       if (output.equals(""))

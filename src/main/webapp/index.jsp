@@ -123,12 +123,39 @@ material you think would be suitable.</p>
   </td>
   <td>
    <p>
-<a href="OxPQ/OxPQ/id/23233640.js?arc=physicallyContainedWithin">js</a>
+<a href="OxPQ/id/23233640.js?arc=physicallyContainedWithin">js</a>
    </p>
   </td>
   <td>
    <p>
 <a href="OxPQ/id/23233640.gjson?arc=physicallyContainedWithin">gjson</a>
+   </p>
+  </td>
+ </tr>
+ <tr>
+  <td>
+   <p>
+<a href="OxPQ/type/College.xml?not=hasITHomepage">Colleges without IT Homepages</a>
+   </p>
+  </td>
+  <td>
+   <p>
+<a href="OxPQ/type/College.kml?not=hasITHomepage">kml</a>
+   </p>
+  </td>
+  <td>
+   <p>
+<a href="OxPQ/type/College.json?not=hasITHomepage">json</a>
+   </p>
+  </td>
+  <td>
+   <p>
+<a href="OxPQ/type/College.js?not=hasITHomepage">js</a>
+   </p>
+  </td>
+  <td>
+   <p>
+<a href="OxPQ/type/College.gjson?not=hasITHomepage">gjson</a>
    </p>
   </td>
  </tr>

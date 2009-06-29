@@ -39,8 +39,6 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.util.Calendar;
 import java.util.Collection;
-import java.util.Map;
-import java.util.TreeMap;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -65,15 +63,8 @@ import org.oucs.gaboto.model.GabotoSnapshot;
 import org.oucs.gaboto.model.query.GabotoQuery;
 import org.oucs.gaboto.timedim.TimeInstant;
 import org.oucs.gaboto.util.GabotoOntologyLookup;
-import org.oucs.gaboto.vocabulary.DC;
-import org.oucs.gaboto.vocabulary.GabotoKML;
-import org.oucs.gaboto.vocabulary.GabotoVocab;
-import org.oucs.gaboto.vocabulary.GeoVocab;
 import org.oucs.gaboto.vocabulary.OxPointsVocab;
-import org.oucs.gaboto.vocabulary.RDFCON;
-import org.oucs.gaboto.vocabulary.RDFG;
-import org.oucs.gaboto.vocabulary.TimeVocab;
-import org.oucs.gaboto.vocabulary.VCard;
+
 
 import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.Resource;
@@ -96,16 +87,7 @@ import com.hp.hpl.jena.rdf.model.Resource;
 public class OxPointsQueryServlet extends HttpServlet {
 
   private static final long serialVersionUID = 4155078999145248554L;
-  private static Logger logger = Logger.getLogger(OxPointsQueryServlet.class
-      .getName());
-  static Map<String, String> namespacePrefixes = new TreeMap<String, String>();
-  {
-    // HACK the ordering so that oxpoints#subsetOf is prioritised over DC#subsetOf
-    namespacePrefixes.put("1oxp:",   OxPointsVocab.NS);
-    namespacePrefixes.put("2dc:",    DC.NS);
-    namespacePrefixes.put("3vCard:", VCard.NS);
-    namespacePrefixes.put("4geo:",   GeoVocab.NS);
-  }
+  private static Logger logger = Logger.getLogger(OxPointsQueryServlet.class.getName());
 
   private static Gaboto gaboto;
 
@@ -130,13 +112,14 @@ public class OxPointsQueryServlet extends HttpServlet {
     snapshot = gaboto.getSnapshot(TimeInstant.from(startTime));
 
   }
+
   /**
    */
   @Override
   public void doGet(HttpServletRequest request, HttpServletResponse response) {
-    try { 
+    try {
       outputPool(request, response);
-    } catch (AnticipatedException e) { 
+    } catch (AnticipatedException e) {
       error(request, response, e);
     }
   }
@@ -152,111 +135,70 @@ public class OxPointsQueryServlet extends HttpServlet {
     out.println("<html><head><title>OxPoints Anticipated Error</title></head>");
     out.println("<body>");
     out.println("<h2>OxPoints Anticipated Error</h2>");
-    out.println("<h3>" + exception.getMessage() +  "</h3>");
-    out.println("<p>An anticipated error has occured in the application"); 
+    out.println("<h3>" + exception.getMessage() + "</h3>");
+    out.println("<p>An anticipated error has occured in the application");
     out.println("that runs this website, please contact <a href='mailto:");
     out.println(getSysAdminEmail() + "'>" + getSysAdminName() + "</a>");
     out.println(", with the information given below.</p>");
-    out.println("<h3> Invoked by " + request.getRequestURL().toString() +  "</h3>");
-    out.println("<h3> query " + request.getQueryString() +  "</h3>");
+    out.println("<h3> Invoked by " + request.getRequestURL().toString() + "</h3>");
+    out.println("<h3> query " + request.getQueryString() + "</h3>");
     out.println("<h4><font color='red'><pre>");
     exception.printStackTrace(out);
     out.println("</pre></font></h4>");
     out.println("</body></html>");
-    
-    
-  }
 
+  }
 
   private String getSysAdminEmail() {
     return "Tim.Pizey@oucs.ox.ac.uk";
-    
+
   }
+
   private String getSysAdminName() {
     return "Tim Pizey";
   }
+
   void outputPool(HttpServletRequest request, HttpServletResponse response) {
-    String pathInfo = request.getPathInfo();
     Query query = Query.fromRequest(request);
-    if (pathInfo == null) 
-      throw new AnticipatedException("Expected path info");
-    pathInfo = setFormatFromPathInfo(pathInfo, query);
-    System.err.println("here1" + pathInfo);
-    if (pathInfo.startsWith("/timestamp")) {
+    switch (query.getReturnType()) {
+    case META_TIMESTAMP:
       try {
-        response.getWriter().write(
-            new Long(startTime.getTimeInMillis()).toString());
+        response.getWriter().write(new Long(startTime.getTimeInMillis()).toString());
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
-    } else if (pathInfo.startsWith("/types") || pathInfo.startsWith("/classess")) {
-      output(GabotoOntologyLookup.getRegisteredEntityClassesAsClassNames(), query,
-          response);
-    } else if (pathInfo.startsWith("/all")) {
+      return;
+    case META_TYPES:
+      output(GabotoOntologyLookup.getRegisteredEntityClassesAsClassNames(), query, response);
+      return;
+    case ALL:
       output(GabotoEntityPool.createFrom(snapshot), query, response);
-    } else if (pathInfo.startsWith("/id/")) {
-      String id = pathInfo.substring(4);
-      String uri = config.getNSData() + id;
+      return;
+    case INDIVIDUAL:
       GabotoEntityPool pool = new GabotoEntityPool(gaboto, snapshot);
       try {
-        pool.addEntity(snapshot.loadEntity(uri));
+        pool.addEntity(snapshot.loadEntity(query.getUri()));
       } catch (ResourceDoesNotExistException e) {
-        throw new AnticipatedException("Resource not found with uri " + uri, e);
+        throw new AnticipatedException("Resource not found with uri " + query.getUri(), e);
       }
       output(pool, query, response);
-    } else if (pathInfo.startsWith("/type/") || pathInfo.startsWith("/class/")) {  
-      System.err.println("here55");
-      String type = pathInfo.substring(6);
-      output(loadPoolWithEntitiesOfType(type), query, response);
-    } else if (startsWithPropertyName(pathInfo)) {
-      output(loadPoolWithEntitiesOfProperty(getProperty(pathInfo), getPropertyValue(pathInfo)), query, response);
-    } else
-      throw new AnticipatedException("Unexpected path info " + pathInfo);
-  }
+      return;
+    case TYPE_COLLECTION:
+      output(loadPoolWithEntitiesOfType(query.getType()), query, response);
+      return;
+    case COLLECTION:
+      output(loadPoolWithEntitiesOfProperty(query.getRequestedProperty(), query.getRequestedPropertyValue()), query,
+              response);
+      return;
+    default:
+      throw new RuntimeException("Fell through case with value " + query.getReturnType());
+    }
 
-  private boolean startsWithPropertyName(String pathInfo) {
-    return getPropertyName(pathInfo) != null;
   }
-  private Property getProperty(String pathInfo) { 
-    String[] tokens = getTokens(pathInfo);
-    return getPropertyFromAbreviation(tokens[0]); 
-  }
-  private String getPropertyName(String pathInfo) {
-    String[] tokens = getTokens(pathInfo);
-    System.err.println("Token:" + tokens[0]);
-    if (getPropertyFromAbreviation(tokens[0]) != null)
-      return tokens[0];
-    else 
-      return null;
-  }
-  private String getPropertyValue(String pathInfo) {
-    String[] tokens = getTokens(pathInfo);
-    if (tokens.length == 1)
-      return null;
-    return tokens[1].replace('+', ' ');
-  }
-  
-  private String[] getTokens(String pathInfo) { 
-    if (pathInfo == null) 
-      return null;
-    if (pathInfo.equals("")) 
-      return null;
-    if (pathInfo.equals("/")) 
-      return null;
-    if (!pathInfo.startsWith("/")) 
-      throw new IllegalArgumentException("Malformed pathInfo:" + pathInfo);
-    
-    String trimmedPathInfo = pathInfo.substring(1,pathInfo.length());
-    if (trimmedPathInfo.length() == 0)
-      return null;
-    
-    return trimmedPathInfo.split("/");
-  }
-
-
-
 
   private GabotoEntityPool loadPoolWithEntitiesOfProperty(Property prop, String value) {
+    if (prop == null)
+      throw new NullPointerException();
     GabotoEntityPool pool = null;
     if (value == null) {
       pool = snapshot.loadEntitiesWithProperty(prop);
@@ -264,30 +206,19 @@ public class OxPointsQueryServlet extends HttpServlet {
       String values[] = value.split("[|]");
 
       for (String v : values) {
-        if (requiresResource(prop)) { 
+        if (requiresResource(prop)) {
           Resource r = getResource(v);
           System.err.println("Found r: " + r + " for prop " + prop);
           pool = becomeOrAdd(pool, snapshot.loadEntitiesWithProperty(prop, r));
-        } else  {
-          pool = becomeOrAdd(pool,snapshot.loadEntitiesWithProperty(prop, v));
+        } else {
+          pool = becomeOrAdd(pool, snapshot.loadEntitiesWithProperty(prop, v));
         }
       }
     }
     return pool;
   }
-  private String setFormatFromPathInfo(String pathInfo, Query query) {
-    int dotPosition = pathInfo.indexOf('.');
-    if (dotPosition == -1) {
-      return pathInfo;
-    } else {
-      query .setFormat(pathInfo.substring(dotPosition + 1));
-      return pathInfo.substring(0, dotPosition);
-    }
-  }
 
-
-  private GabotoEntityPool  
-  becomeOrAdd(GabotoEntityPool pool, GabotoEntityPool poolToAdd) {
+  private GabotoEntityPool becomeOrAdd(GabotoEntityPool pool, GabotoEntityPool poolToAdd) {
     if (poolToAdd == null)
       throw new NullPointerException();
     if (pool == null) {
@@ -303,7 +234,7 @@ public class OxPointsQueryServlet extends HttpServlet {
 
   private Resource getResource(String v) {
     String vUri = config.getNSData() + v;
-    return  snapshot.getResource(vUri);
+    return snapshot.getResource(vUri);
   }
 
   private boolean requiresResource(Property property) {
@@ -329,13 +260,13 @@ public class OxPointsQueryServlet extends HttpServlet {
     for (String t : types) {
       if (!GabotoOntologyLookup.isValidName(t))
         throw new IllegalArgumentException("Found no URI matching type " + t);
-      String typeURI = OxPointsVocab.NS +  t;
+      String typeURI = OxPointsVocab.NS + t;
       conf.addAcceptedType(typeURI);
     }
 
     return GabotoEntityPool.createFrom(conf);
   }
-  
+
   private void output(Collection<String> them, Query query, HttpServletResponse response) {
     try {
       if (query.getFormat().equals("txt")) {
@@ -388,7 +319,6 @@ public class OxPointsQueryServlet extends HttpServlet {
     System.err.println("Pool has " + pool.getSize() + " elements");
     System.err.println("output.Format:" + query.getFormat() + ":");
 
-
     String output = "";
     if (query.getFormat().equals("kml")) {
       output = createKml(pool, query);
@@ -401,16 +331,13 @@ public class OxPointsQueryServlet extends HttpServlet {
 
       output = transformer.transform(pool);
       if (query.getFormat().equals("js")) {
-        if (query.getJsCallback() == null)
-          query.setJsCallback("oxpoints");
         output = query.getJsCallback() + "(" + output + ");";
       }
       response.setContentType("text/javascript");
     } else if (query.getFormat().equals("gjson")) {
       GeoJSONPoolTransfomer transformer = new GeoJSONPoolTransfomer();
       if (query.getArc() != null) {
-        transformer.addEntityFolderType(getFolderTypeUri(query.getFolderType()),
-            getPropertyURIOrDie(query.getArc()));
+        transformer.addEntityFolderType(query.getFolderClassURI(), query.getArcProperty().getURI());
       }
       if (query.getOrderBy() != null) {
         transformer.setOrderBy(query.getOrderByProperty().getURI());
@@ -421,13 +348,12 @@ public class OxPointsQueryServlet extends HttpServlet {
       if (query.getJsCallback() != null)
         output = query.getJsCallback() + "(" + output + ");";
       response.setContentType("text/javascript");
-    } else if (query.getFormat().equals("xml")) { 
+    } else if (query.getFormat().equals("xml")) {
 
       System.err.println("Pool has " + pool.getSize() + " elements");
       EntityPoolTransformer transformer;
       try {
-        transformer = RDFPoolTransformerFactory
-            .getRDFPoolTransformer(GabotoQuery.FORMAT_RDF_XML_ABBREV);
+        transformer = RDFPoolTransformerFactory.getRDFPoolTransformer(GabotoQuery.FORMAT_RDF_XML_ABBREV);
         output = transformer.transform(pool);
       } catch (UnsupportedFormatException e) {
         throw new IllegalArgumentException(e);
@@ -438,7 +364,7 @@ public class OxPointsQueryServlet extends HttpServlet {
       if (output.equals(""))
         throw new RuntimeException("No output created by GPSBabel");
     }
-    //System.err.println("output:" + output + ":");
+    // System.err.println("output:" + output + ":");
     try {
       response.getWriter().write(output);
     } catch (IOException e) {
@@ -450,8 +376,7 @@ public class OxPointsQueryServlet extends HttpServlet {
     String output;
     KMLPoolTransformer transformer = new KMLPoolTransformer();
     if (query.getArc() != null) {
-      transformer.addEntityFolderType(getFolderTypeUri(query.getFolderType()),
-          getPropertyURIOrDie(query.getArc()));
+      transformer.addEntityFolderType(query.getFolderClassURI(), query.getArcProperty().getURI());
     }
     if (query.getOrderBy() != null) {
       transformer.setOrderBy(query.getOrderByProperty().getURI());
@@ -462,67 +387,28 @@ public class OxPointsQueryServlet extends HttpServlet {
     return output;
   }
 
-  private String getPropertyURIOrDie(String propertyKey) {
-    String returnString = getPropertyURI(propertyKey);
-    if (returnString == null)
-      throw new IllegalArgumentException(
-          "No namespace found matching property " + propertyKey);
-    return returnString;
-  }
-
-  static Property getPropertyFromAbreviation(String propertyAbreviation) {
-    for (String prefix : namespacePrefixes.keySet()) {
-      System.err.println("Que:"+prefix);
-      String key = namespacePrefixes.get(prefix) + propertyAbreviation;
-      Property p = checkedProperty(key);
-      System.err.println("Que:"+key + "=" + p);
-      if (p != null)
-        return p; 
-    }
-    return null;
-  }
-  static Property checkedProperty(String propertyURI) {
-    if (isValidPropertyName(propertyURI))
-      return snapshot.getModel().getProperty(propertyURI) ;
-    else 
-      return null;
-  }
-
-  private String getPropertyURI(String propertyKey) {
-    for (String prefix : namespacePrefixes.keySet()) {
-      String key = prefix.substring(1);
-      if (propertyKey.startsWith(key))
-        return namespacePrefixes.get(prefix)
-            + propertyKey.substring(key.length());
-    }
-    return null;
-  }
-
-  private String getFolderTypeUri(String propertyKey) {
-    if (propertyKey == null)
-      return OxPointsVocab.NS + "College";
-    return getPropertyURIOrDie(propertyKey);
-  }
-
   /**
-   * @param input A String, normally kml
-   * @param formatIn format name, other than kml
-   * @param formatOut what you want out
+   * @param input
+   *          A String, normally kml
+   * @param formatIn
+   *          format name, other than kml
+   * @param formatOut
+   *          what you want out
    * @return the reformatted String
    */
-  public static  String runGPSBabel(String input, String formatIn, String formatOut) {
+  public static String runGPSBabel(String input, String formatIn, String formatOut) {
     // '/usr/bin/gpsbabel -i kml -o ' . $format . ' -f ' . $In . ' -F ' . $Out;
     if (formatIn == null)
       formatIn = "kml";
-    if (formatOut == null) 
+    if (formatOut == null)
       throw new IllegalArgumentException("Missing output format for GPSBabel");
-    
+
     OutputStream stdin = null;
     InputStream stderr = null;
     InputStream stdout = null;
-    
+
     String output = "";
-    String command = "/usr/bin/gpsbabel -i " + formatIn + " -o " + formatOut + " -f - -F -";  
+    String command = "/usr/bin/gpsbabel -i " + formatIn + " -o " + formatOut + " -f - -F -";
     System.err.println("GPSBabel command:" + command);
     Process process;
     try {
@@ -556,8 +442,7 @@ public class OxPointsQueryServlet extends HttpServlet {
         throw new RuntimeException("Command " + command + " gave error:\n" + stderrString);
       }
 
-      BufferedReader brCleanUp = new BufferedReader(new InputStreamReader(
-          stdout));
+      BufferedReader brCleanUp = new BufferedReader(new InputStreamReader(stdout));
       String line;
       try {
         while ((line = brCleanUp.readLine()) != null) {
@@ -581,7 +466,7 @@ public class OxPointsQueryServlet extends HttpServlet {
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
-      if (!stderrString.equals("")) 
+      if (!stderrString.equals(""))
         throw new RuntimeException("Command " + command + " gave error:\n" + stderrString);
     } finally {
       process.destroy();
@@ -589,58 +474,12 @@ public class OxPointsQueryServlet extends HttpServlet {
     return output;
   }
 
-  
-  static boolean isValidPropertyName(String pName) { 
-    if (OxPointsVocab.MODEL.getObjectProperty(pName) != null)
-      return true;
-    if (VCard.MODEL.getObjectProperty(pName) != null)
-      return true;    
-    if (GabotoVocab.MODEL.getObjectProperty(pName) != null)
-      return true;
-    if (GabotoKML.MODEL.getObjectProperty(pName) != null)
-      return true;    
-    if (GeoVocab.MODEL.getObjectProperty(pName) != null)
-      return true;    
-    if (DC.MODEL.getObjectProperty(pName) != null)
-      return true;    
-    if (RDFCON.MODEL.getObjectProperty(pName) != null)
-      return true;    
-    if (RDFG.MODEL.getObjectProperty(pName) != null)
-      return true;    
-    if (TimeVocab.MODEL.getObjectProperty(pName) != null)
-      return true;    
-
-    if (OxPointsVocab.MODEL.getAnnotationProperty(pName) != null)
-      return true;
-    if (VCard.MODEL.getAnnotationProperty(pName) != null)
-      return true;    
-    if (GabotoVocab.MODEL.getAnnotationProperty(pName) != null)
-      return true;
-    if (GabotoKML.MODEL.getAnnotationProperty(pName) != null)
-      return true;    
-    if (GeoVocab.MODEL.getAnnotationProperty(pName) != null)
-      return true;    
-    if (DC.MODEL.getAnnotationProperty(pName) != null)
-      return true;    
-    if (RDFCON.MODEL.getAnnotationProperty(pName) != null)
-      return true;    
-    if (RDFG.MODEL.getAnnotationProperty(pName) != null)
-      return true;    
-    if (TimeVocab.MODEL.getAnnotationProperty(pName) != null)
-      return true;    
-    return false;
-  }
-  
-  
   private InputStream getResourceOrDie(String fileName) {
     String resourceName = fileName;
-    InputStream is = Thread.currentThread().getContextClassLoader()
-        .getResourceAsStream(resourceName);
+    InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream(resourceName);
     if (is == null)
-      throw new NullPointerException("File " + resourceName
-          + " cannot be loaded");
+      throw new NullPointerException("File " + resourceName + " cannot be loaded");
     return is;
   }
-  
-  
+
 }

@@ -33,25 +33,61 @@
 package uk.ac.ox.oucs.erewhon.oxpq;
 
 import java.util.Enumeration;
+import java.util.Map;
+import java.util.TreeMap;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.oucs.gaboto.vocabulary.DC;
+import org.oucs.gaboto.vocabulary.GabotoKML;
+import org.oucs.gaboto.vocabulary.GabotoVocab;
+import org.oucs.gaboto.vocabulary.GeoVocab;
+import org.oucs.gaboto.vocabulary.OxPointsVocab;
+import org.oucs.gaboto.vocabulary.RDFCON;
+import org.oucs.gaboto.vocabulary.RDFG;
+import org.oucs.gaboto.vocabulary.TimeVocab;
+import org.oucs.gaboto.vocabulary.VCard;
+
 import com.hp.hpl.jena.rdf.model.Property;
 
-class Query {
+public class Query {
   
-  private static Property orderByProperty;
-  String arc = null;
-  String orderBy = null;
-  String folderType = null;
-  String propertyName = null;
-  String propertyValue = null;
-  boolean displayParentName = true;
-  int jsonDepth = 1;
-  String format = null;
+  private String arc = null;
+  private String orderBy = null;
+  private String folderClassName = null;
+  private String requestedPropertyName = null;
+  private String requestedPropertyValue = null;
+  private boolean displayParentName = true;
+  private int jsonDepth = 1;
+  private String format = null;
   // See http://bob.pythonmac.org/archives/2005/12/05/remote-json-jsonp/
-  String jsCallback = null;
+  private String jsCallback = null;
   
+  private Property orderByProperty;
+  private Property arcProperty;
+  private Property requestedProperty;
+  
+  private String resultsetSpec;
+  private ReturnType returnType = ReturnType.ALL;
+  private String folderClassURI = OxPointsVocab.NS + "College";
+  
+  public enum ReturnType {
+    META_TIMESTAMP, META_TYPES, ALL, TYPE_COLLECTION, COLLECTION, INDIVIDUAL 
+  } 
+  
+  private static Map<String, String> namespacePrefixes = new TreeMap<String, String>();
+  private static String id;
+  private static String uri;
+  private static String type;
+  {
+    // HACK the ordering so that oxpoints#subsetOf is prioritised over DC#subsetOf
+    namespacePrefixes.put("1oxp:",   OxPointsVocab.NS);
+    namespacePrefixes.put("2dc:",    DC.NS);
+    namespacePrefixes.put("3vCard:", VCard.NS);
+    namespacePrefixes.put("4geo:",   GeoVocab.NS);
+  }
+
+  private Query() {}
   
   /**
    * @param request
@@ -63,29 +99,76 @@ class Query {
 
     q.arc = null;
     q.orderBy = null;
-    q.folderType = null;
-    q.propertyName = null;
-    q.propertyValue = null;
+    q.folderClassName = null;
+    q.requestedPropertyName = null;
+    q.requestedPropertyValue = null;
     q.displayParentName = true;
     q.jsonDepth = 1;
 
+    String pathInfo = request.getPathInfo();
+    if (pathInfo == null) 
+      throw new AnticipatedException("Expected path info");
+    int dotPosition = pathInfo.lastIndexOf('.');
+    System.err.println(pathInfo);
+    if (dotPosition == -1) {
+      q.setResultsetSpec(pathInfo);
+    } else {
+      q.format = pathInfo.substring(dotPosition + 1);
+      q.setResultsetSpec(pathInfo.substring(0,dotPosition));
+    }    
+    System.err.println(q.resultsetSpec);
+    if (q.resultsetSpec.startsWith("/timestamp")) {
+      q.returnType = ReturnType.META_TIMESTAMP;
+    } else if (q.resultsetSpec.startsWith("/types") || q.resultsetSpec.startsWith("/classess")) {
+      q.returnType = ReturnType.META_TYPES;
+    } else if (q.resultsetSpec.startsWith("/all")) {
+      q.returnType = ReturnType.ALL;
+    } else if (q.resultsetSpec.startsWith("/id/")) {
+      id = q.resultsetSpec.substring(4);
+      uri = "http://m.ox.ac.uk/oxpoints/id/" + id;
+      
+      q.returnType = ReturnType.INDIVIDUAL;
+    } else if (q.resultsetSpec.startsWith("/type/") || q.resultsetSpec.startsWith("/class/")) {  
+      type = q.resultsetSpec.substring(6);
+      q.returnType = ReturnType.TYPE_COLLECTION;
+    } else if (startsWithPropertyName(q.resultsetSpec)) {
+      q.requestedPropertyName = getPropertyName(q.resultsetSpec); 
+      q.requestedPropertyValue = getPropertyValue(q.resultsetSpec); 
+      q.requestedProperty = getPropertyFromAbreviation(q.requestedPropertyName);
+      q.returnType = ReturnType.COLLECTION;
+    } else
+      throw new AnticipatedException("Unexpected path info " + pathInfo);
+    
     Enumeration<String> en = request.getParameterNames();
     while (en.hasMoreElements()) {
       String pName = en.nextElement();
       String pValue =  request.getParameter(pName);
 
       System.err.println("Param:" + pName + "=" + pValue);
-      if (pName.equals("arc"))
-        q.arc = pValue;
-      else if (pName.equals("folderType"))
-        q.folderType = pValue;
-      else if (pName.equals("property"))
-        q.propertyName = pValue;
-      else if (pName.equals("value"))
-        q.propertyValue = pValue;
+      if (pName.equals("arc")) {
+        q.arcProperty = getPropertyFromAbreviation(pValue);
+        if (q.arcProperty != null)
+          q.arc = pValue;
+        else 
+          throw new AnticipatedException("Unrecognised arc property name " + pValue);
+      } else if (pName.equals("folderType")) { 
+        q.folderClassURI = getValidClassURI(pValue);
+        if (q.folderClassURI != null) {
+          q.folderClassName = pValue;
+        } else 
+          throw new AnticipatedException("Unrecognised folder type " + pValue);
+      } else if (pName.equals("property")) {
+        q.requestedProperty = getPropertyFromAbreviation(pValue);
+        if (q.requestedProperty != null)
+          q.requestedPropertyName = pValue;
+        else 
+          throw new AnticipatedException("Unrecognised property name " + pValue);
+      } else if (pName.equals("value"))
+        // FIXME We should know the type, and so should be able to validate
+        q.requestedPropertyValue = pValue;
       else if (pName.equals("orderBy")) {
-        orderByProperty = OxPointsQueryServlet.getPropertyFromAbreviation(pValue); 
-        if (orderByProperty != null)
+        q.orderByProperty = getPropertyFromAbreviation(pValue); 
+        if (q.orderByProperty != null)
           q.orderBy = pValue;
         else 
           throw new AnticipatedException("Unrecognised orderBy property name " + pValue);
@@ -109,122 +192,253 @@ class Query {
     }
     return q;
   }
+
+  /**
+   * @return the folderClassURI
+   */
+  public String getFolderClassURI() {
+    return folderClassURI;
+  }
+
+  /**
+   * @return the requestedPropertyName
+   */
+  public String getRequestedPropertyName() {
+    return requestedPropertyName;
+  }
+
+  /**
+   * @return the requestedPropertyValue
+   */
+  public String getRequestedPropertyValue() {
+    return requestedPropertyValue;
+  }
+
+  public ReturnType getReturnType() {
+    return returnType;
+  }
+  
+  
+  /**
+   * @return the arcProperty
+   */
+  public Property getArcProperty() {
+    return arcProperty;
+  }
+
+  /**
+   * @return the requestedProperty
+   */
+  public Property getRequestedProperty() {
+    return requestedProperty;
+  }
+
   
   /**
    * @return the arc
    */
-  String getArc() {
+  public String getArc() {
     return arc;
   }
-  /**
-   * @param arc the arc to set
-   */
-  void setArc(String arc) {
-    this.arc = arc;
-  }
+
   /**
    * @return the orderBy
    */
-  String getOrderBy() {
+  public String getOrderBy() {
     return orderBy;
   }
   /**
-   * @param orderBy the orderBy to set
+   * @return the folder class name
    */
-  void setOrderBy(String orderBy) {
-    this.orderBy = orderBy;
-  }
-  /**
-   * @return the folderType
-   */
-  String getFolderType() {
-    return folderType;
-  }
-  /**
-   * @param folderType the folderType to set
-   */
-  void setFolderType(String folderType) {
-    this.folderType = folderType;
+  public String getFolderClassName() {
+    return folderClassName;
   }
   /**
    * @return the propertyName
    */
-  String getPropertyName() {
-    return propertyName;
-  }
-  /**
-   * @param propertyName the propertyName to set
-   */
-  void setPropertyName(String propertyName) {
-    this.propertyName = propertyName;
-  }
-  /**
-   * @return the propertyValue
-   */
-  String getPropertyValue() {
-    return propertyValue;
-  }
-  /**
-   * @param propertyValue the propertyValue to set
-   */
-  void setPropertyValue(String propertyValue) {
-    this.propertyValue = propertyValue;
+  public String getPropertyName() {
+    return requestedPropertyName;
   }
   /**
    * @return the displayParentName
    */
-  boolean getDisplayParentName() {
+  public boolean getDisplayParentName() {
     return displayParentName;
-  }
-  /**
-   * @param displayParentName the displayParentName to set
-   */
-  void setDisplayParentName(boolean displayParentName) {
-    this.displayParentName = displayParentName;
   }
   /**
    * @return the jsonDepth
    */
-  int getJsonDepth() {
+  public int getJsonDepth() {
     return jsonDepth;
-  }
-  /**
-   * @param jsonDepth the jsonDepth to set
-   */
-  void setJsonDepth(int jsonDepth) {
-    this.jsonDepth = jsonDepth;
   }
   /**
    * @return the format
    */
-  String getFormat() {
+  public String getFormat() {
     return format;
-  }
-  /**
-   * @param format the format to set
-   */
-  void setFormat(String format) {
-    this.format = format;
   }
   /**
    * @return the jsCallback
    */
-  String getJsCallback() {
+  public String getJsCallback() {
+    if (jsCallback == null && format.equals("js"))
+      jsCallback ="oxpoints";
     return jsCallback;
-  }
-  /**
-   * @param jsCallback the jsCallback to set
-   */
-  void setJsCallback(String jsCallback) {
-    this.jsCallback = jsCallback;
   }
 
   /**
    * @return the orderByURI
    */
-  Property getOrderByProperty() {
+  public Property getOrderByProperty() {
     return orderByProperty;
   }
-   
+    
+  
+  public static 
+  boolean startsWithPropertyName(String pathInfo) {
+    return getPropertyName(pathInfo) != null;
+  }
+  public Property getProperty(String pathInfo) { 
+    String[] tokens = getTokens(pathInfo);
+    return getPropertyFromAbreviation(tokens[0]); 
+  }
+  private static 
+  String getPropertyName(String pathInfo) {
+    String[] tokens = getTokens(pathInfo);
+    System.err.println("Token:" + tokens[0]);
+    if (getPropertyFromAbreviation(tokens[0]) != null)
+      return tokens[0];
+    else 
+      return null;
+  }
+  public static 
+  String getPropertyValue(String pathInfo) {
+    String[] tokens = getTokens(pathInfo);
+    if (tokens.length == 1)
+      return null;
+    return tokens[1].replace('+', ' ');
+  }
+  
+  static private 
+  String[] getTokens(String pathInfo) { 
+    if (pathInfo == null) 
+      return null;
+    if (pathInfo.equals("")) 
+      return null;
+    if (pathInfo.equals("/")) 
+      return null;
+    if (!pathInfo.startsWith("/")) 
+      throw new IllegalArgumentException("Malformed pathInfo:" + pathInfo);
+    
+    String trimmedPathInfo = pathInfo.substring(1,pathInfo.length());
+    if (trimmedPathInfo.length() == 0)
+      return null;
+    
+    return trimmedPathInfo.split("/");
+  }
+
+
+  private static Property getPropertyFromAbreviation(String propertyAbreviation) {
+    for (String prefix : namespacePrefixes.keySet()) {
+      System.err.println("Que:"+prefix);
+      String key = namespacePrefixes.get(prefix) + propertyAbreviation;
+      Property p = getPropertyNamed(key);
+      System.err.println("Que:"+key + "=" + p);
+      if (p != null)
+        return p; 
+    }
+    return null;
+  }
+
+  static String getValidClassURI(String className) { 
+    for (String prefix : namespacePrefixes.keySet()) {
+      System.err.println("Que:"+prefix);
+      String key = namespacePrefixes.get(prefix) + className;
+      if (isValidClass(key))
+        return key; 
+    }
+    return null;    
+  }
+  static boolean isValidClass(String className) { 
+    if (OxPointsVocab.MODEL.getOntClass(className) != null)
+      return true;
+    if (VCard.MODEL.getOntClass(className) != null)
+      return true;
+    if (GabotoVocab.MODEL.getOntClass(className) != null)
+      return true;
+    if (GabotoKML.MODEL.getOntClass(className) != null)
+      return true;
+    if (GeoVocab.MODEL.getOntClass(className) != null)
+      return true;
+    if (DC.MODEL.getOntClass(className) != null)
+      return true;
+    if (RDFCON.MODEL.getOntClass(className) != null)
+      return true;
+    if (RDFG.MODEL.getOntClass(className) != null)
+      return true;
+    if (TimeVocab.MODEL.getOntClass(className) != null)
+      return true;
+    return false;
+  }
+  static Property getPropertyNamed(String pName) { 
+    if (OxPointsVocab.MODEL.getObjectProperty(pName) != null)
+      return OxPointsVocab.MODEL.getObjectProperty(pName);
+    if (VCard.MODEL.getObjectProperty(pName) != null)
+      return VCard.MODEL.getObjectProperty(pName);    
+    if (GabotoVocab.MODEL.getObjectProperty(pName) != null)
+      return GabotoVocab.MODEL.getObjectProperty(pName);
+    if (GabotoKML.MODEL.getObjectProperty(pName) != null)
+      return GabotoKML.MODEL.getObjectProperty(pName);    
+    if (GeoVocab.MODEL.getObjectProperty(pName) != null)
+      return GeoVocab.MODEL.getObjectProperty(pName);    
+    if (DC.MODEL.getObjectProperty(pName) != null)
+      return DC.MODEL.getObjectProperty(pName);    
+    if (RDFCON.MODEL.getObjectProperty(pName) != null)
+      return RDFCON.MODEL.getObjectProperty(pName);    
+    if (RDFG.MODEL.getObjectProperty(pName) != null)
+      return RDFG.MODEL.getObjectProperty(pName);    
+    if (TimeVocab.MODEL.getObjectProperty(pName) != null)
+      return TimeVocab.MODEL.getObjectProperty(pName);    
+
+    if (OxPointsVocab.MODEL.getAnnotationProperty(pName) != null)
+      return OxPointsVocab.MODEL.getAnnotationProperty(pName);
+    if (VCard.MODEL.getAnnotationProperty(pName) != null)
+      return VCard.MODEL.getAnnotationProperty(pName);    
+    if (GabotoVocab.MODEL.getAnnotationProperty(pName) != null)
+      return GabotoVocab.MODEL.getAnnotationProperty(pName);
+    if (GabotoKML.MODEL.getAnnotationProperty(pName) != null)
+      return GabotoKML.MODEL.getAnnotationProperty(pName);    
+    if (GeoVocab.MODEL.getAnnotationProperty(pName) != null)
+      return GeoVocab.MODEL.getAnnotationProperty(pName);    
+    if (DC.MODEL.getAnnotationProperty(pName) != null)
+      return DC.MODEL.getAnnotationProperty(pName);    
+    if (RDFCON.MODEL.getAnnotationProperty(pName) != null)
+      return RDFCON.MODEL.getAnnotationProperty(pName);    
+    if (RDFG.MODEL.getAnnotationProperty(pName) != null)
+      return RDFG.MODEL.getAnnotationProperty(pName);    
+    if (TimeVocab.MODEL.getAnnotationProperty(pName) != null)
+      return TimeVocab.MODEL.getAnnotationProperty(pName);    
+    return null;
+  }
+  static boolean isValidPropertyName(String pName) { 
+    return getPropertyNamed(pName) != null;
+ }
+
+  public void setResultsetSpec(String resultsetSpec) {
+    this.resultsetSpec = resultsetSpec;
+  }
+
+  public String getResultsetSpec() {
+    return resultsetSpec;
+  }
+
+  public String getUri() {
+    return uri;
+  }
+
+  public String getType() {
+    return type;
+  }
+
   
 }

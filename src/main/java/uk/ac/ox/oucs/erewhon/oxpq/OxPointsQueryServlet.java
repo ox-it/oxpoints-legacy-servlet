@@ -39,7 +39,6 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.util.Calendar;
 import java.util.Collection;
-import java.util.Enumeration;
 import java.util.Map;
 import java.util.TreeMap;
 

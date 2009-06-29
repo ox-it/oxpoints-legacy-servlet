@@ -418,8 +418,8 @@ public class OxPointsQueryServlet extends HttpServlet {
       transformer.setDisplayParentName(query.getDisplayParentName());
 
       output += transformer.transform(pool);
-      query.setJsCallback("oxpoints");
-      output = query.getJsCallback() + "(" + output + ");";
+      if (query.getJsCallback() != null)
+        output = query.getJsCallback() + "(" + output + ");";
       response.setContentType("text/javascript");
     } else if (query.getFormat().equals("xml")) { 
 

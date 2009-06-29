@@ -63,6 +63,7 @@ public class Query {
   // See http://bob.pythonmac.org/archives/2005/12/05/remote-json-jsonp/
   private String jsCallback = null;
   
+  private Property notProperty;
   private Property orderByProperty;
   private Property arcProperty;
   private Property requestedProperty;
@@ -72,7 +73,7 @@ public class Query {
   private String folderClassURI = OxPointsVocab.NS + "College";
   
   public enum ReturnType {
-    META_TIMESTAMP, META_TYPES, ALL, TYPE_COLLECTION, COLLECTION, INDIVIDUAL 
+    META_TIMESTAMP, META_TYPES, ALL, TYPE_COLLECTION, COLLECTION, INDIVIDUAL, NOT_FILTERED_TYPE_COLLECTION 
   } 
   
   private static Map<String, String> namespacePrefixes = new TreeMap<String, String>();
@@ -151,6 +152,11 @@ public class Query {
           q.arc = pValue;
         else 
           throw new AnticipatedException("Unrecognised arc property name " + pValue);
+      } else if (pName.equals("not")) {
+        q.returnType = ReturnType.NOT_FILTERED_TYPE_COLLECTION;
+        q.notProperty = getPropertyFromAbreviation(pValue);
+        if (q.notProperty == null)
+          throw new AnticipatedException("Unrecognised not property name " + pValue);
       } else if (pName.equals("folderType")) { 
         q.folderClassURI = getValidClassURI(pValue);
         if (q.folderClassURI != null) {
@@ -439,6 +445,14 @@ public class Query {
   public String getType() {
     return type;
   }
+
+  /**
+   * @return the notProperty
+   */
+  public Property getNotProperty() {
+    return notProperty;
+  }
+
 
   
 }

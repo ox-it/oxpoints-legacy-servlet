@@ -190,6 +190,16 @@ public class OxPointsQueryServlet extends HttpServlet {
       output(loadPoolWithEntitiesOfProperty(query.getRequestedProperty(), query.getRequestedPropertyValue()), query,
               response);
       return;
+    case NOT_FILTERED_TYPE_COLLECTION:
+      GabotoEntityPool p = loadPoolWithEntitiesOfType(query.getType());
+      GabotoEntityPool p2 = loadPoolWithEntitiesOfType(query.getType());
+      for (GabotoEntity e : p.getEntities()) 
+        if (e.getPropertyValue(query.getNotProperty(), false, false) != null)
+          p2.removeEntity(e);
+        
+      output(p2, query,
+              response);
+      return;
     default:
       throw new RuntimeException("Fell through case with value " + query.getReturnType());
     }

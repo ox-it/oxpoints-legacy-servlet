@@ -400,7 +400,7 @@ public class OxPointsQueryServlet extends HttpServlet {
       transformer.setNesting(query.getJsonDepth());
 
       output = transformer.transform(pool);
-      if (query.getFormat().equals("js")) {
+      if (query.getFormat().equals("js") || query.getFormat().equals("gjson")) {
         if (query.getJsCallback() == null)
           query.setJsCallback("oxpoints");
         output = query.getJsCallback() + "(" + output + ");";

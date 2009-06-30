@@ -140,8 +140,9 @@ public class OxPointsQueryServlet extends HttpServlet {
     out.println("that runs this website, please contact <a href='mailto:");
     out.println(getSysAdminEmail() + "'>" + getSysAdminName() + "</a>");
     out.println(", with the information given below.</p>");
-    out.println("<h3> Invoked by " + request.getRequestURL().toString() + "</h3>");
-    out.println("<h3> query " + request.getQueryString() + "</h3>");
+    out.println("<h3> Invoked with " + request.getRequestURL().toString() + "</h3>");
+    if (request.getQueryString() != null)
+      out.println("<h3> query " + request.getQueryString() + "</h3>");
     out.println("<h4><font color='red'><pre>");
     exception.printStackTrace(out);
     out.println("</pre></font></h4>");

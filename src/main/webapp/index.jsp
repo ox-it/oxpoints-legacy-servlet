@@ -2,14 +2,17 @@
 <title>Mobile Portal for Oxford</title>
 <body>
 <h1>Mobile Portal for Oxford</h1>
-<p>This server will deliver Oxford content in a form optimized for mobile
+<p>
+This server will deliver Oxford content in a form optimized for mobile
 devices, courtesy of <a href="http://erewhon.oucs.ox.ac.uk/">the Erewhon
-project</a>.  </p>
-<p>We'll be putting together material during 
-the summer.</p>
-<p>Contact erewhon at oucs.ox.ac.uk if you have 
-material you think would be suitable.</p>
-
+project</a>.
+</p>
+<p>
+Contact erewhon at oucs.ox.ac.uk if you have material you think would be suitable.
+</p>
+<p>
+Details of the OxPoints project can be found <a href="http://www.oucs.ox.ac.uk/oxpoints/">here</a>.
+</p>
 <h2>Examples</h2>
 <table>
  <tr>

@@ -46,13 +46,6 @@ public class AnticipatedException extends RuntimeException {
 
   /**
    * Constructor.
-   */
-  public AnticipatedException() {
-    super();
-  }
-
-  /**
-   * Constructor.
    * @param message
    * @param cause
    */
@@ -66,14 +59,6 @@ public class AnticipatedException extends RuntimeException {
    */
   public AnticipatedException(String message) {
     super(message);
-  }
-
-  /**
-   * Constructor.
-   * @param cause
-   */
-  public AnticipatedException(Throwable cause) {
-    super(cause);
   }
 
 

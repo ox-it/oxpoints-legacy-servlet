@@ -50,11 +50,10 @@ import org.oucs.gaboto.vocabulary.VCard;
 
 import com.hp.hpl.jena.rdf.model.Property;
 
-public class Query {
+public final class Query {
   
   private String arc = null;
   private String orderBy = null;
-  private String folderClassName = null;
   private String requestedPropertyName = null;
   private String requestedPropertyValue = null;
   private boolean displayParentName = true;
@@ -68,7 +67,6 @@ public class Query {
   private Property arcProperty;
   private Property requestedProperty;
   
-  private String resultsetSpec;
   private ReturnType returnType = ReturnType.ALL;
   private String folderClassURI = OxPointsVocab.NS + "College";
   
@@ -100,7 +98,6 @@ public class Query {
 
     q.arc = null;
     q.orderBy = null;
-    q.folderClassName = null;
     q.requestedPropertyName = null;
     q.requestedPropertyValue = null;
     q.displayParentName = true;
@@ -111,30 +108,31 @@ public class Query {
       throw new AnticipatedException("Expected path info");
     int dotPosition = pathInfo.lastIndexOf('.');
     System.err.println(pathInfo);
+    String resultsetSpec;
     if (dotPosition == -1) {
-      q.setResultsetSpec(pathInfo);
+      resultsetSpec = pathInfo;
     } else {
       q.format = pathInfo.substring(dotPosition + 1);
-      q.setResultsetSpec(pathInfo.substring(0,dotPosition));
+      resultsetSpec = pathInfo.substring(0,dotPosition);
     }    
-    System.err.println(q.resultsetSpec);
-    if (q.resultsetSpec.startsWith("/timestamp")) {
+    System.err.println(resultsetSpec);
+    if (resultsetSpec.startsWith("/timestamp")) {
       q.returnType = ReturnType.META_TIMESTAMP;
-    } else if (q.resultsetSpec.startsWith("/types") || q.resultsetSpec.startsWith("/classess")) {
+    } else if (resultsetSpec.startsWith("/types") || resultsetSpec.startsWith("/classes")) {
       q.returnType = ReturnType.META_TYPES;
-    } else if (q.resultsetSpec.startsWith("/all")) {
+    } else if (resultsetSpec.startsWith("/all")) {
       q.returnType = ReturnType.ALL;
-    } else if (q.resultsetSpec.startsWith("/id/")) {
-      id = q.resultsetSpec.substring(4);
+    } else if (resultsetSpec.startsWith("/id/")) {
+      id = resultsetSpec.substring(4);
       uri = "http://m.ox.ac.uk/oxpoints/id/" + id;
       
       q.returnType = ReturnType.INDIVIDUAL;
-    } else if (q.resultsetSpec.startsWith("/type/") || q.resultsetSpec.startsWith("/class/")) {  
-      type = q.resultsetSpec.substring(6);
+    } else if (resultsetSpec.startsWith("/type/") || resultsetSpec.startsWith("/class/")) {  
+      type = resultsetSpec.substring(6);
       q.returnType = ReturnType.TYPE_COLLECTION;
-    } else if (startsWithPropertyName(q.resultsetSpec)) {
-      q.requestedPropertyName = getPropertyName(q.resultsetSpec); 
-      q.requestedPropertyValue = getPropertyValue(q.resultsetSpec); 
+    } else if (startsWithPropertyName(resultsetSpec)) {
+      q.requestedPropertyName = getPropertyName(resultsetSpec); 
+      q.requestedPropertyValue = getPropertyValue(resultsetSpec); 
       q.requestedProperty = getPropertyFromAbreviation(q.requestedPropertyName);
       q.returnType = ReturnType.COLLECTION;
     } else
@@ -159,19 +157,20 @@ public class Query {
           throw new AnticipatedException("Unrecognised not property name " + pValue);
       } else if (pName.equals("folderType")) { 
         q.folderClassURI = getValidClassURI(pValue);
-        if (q.folderClassURI != null) {
-          q.folderClassName = pValue;
-        } else 
+        if (q.folderClassURI == null)
           throw new AnticipatedException("Unrecognised folder type " + pValue);
-      } else if (pName.equals("property")) {
+      } /*
+      else if (pName.equals("property")) {
         q.requestedProperty = getPropertyFromAbreviation(pValue);
         if (q.requestedProperty != null)
           q.requestedPropertyName = pValue;
         else 
           throw new AnticipatedException("Unrecognised property name " + pValue);
-      } else if (pName.equals("value"))
+      } 
+      else if (pName.equals("value"))
         // FIXME We should know the type, and so should be able to validate
         q.requestedPropertyValue = pValue;
+        */
       else if (pName.equals("orderBy")) {
         q.orderByProperty = getPropertyFromAbreviation(pValue); 
         if (q.orderByProperty != null)
@@ -186,12 +185,10 @@ public class Query {
           q.displayParentName = false;
       }
       else if (pName.equals("jsonNesting")) {
-        if (pValue != null) {
-          try {
-            q.jsonDepth = Integer.parseInt(pValue);
-          } catch (NumberFormatException e) {
-            throw new IllegalArgumentException(e);
-          }
+        try {
+          q.jsonDepth = Integer.parseInt(pValue);
+        } catch (NumberFormatException e) {
+          throw new IllegalArgumentException(e);
         }
       } else throw new AnticipatedException(
           "Unrecognised parameter " + pName + ":" + request.getParameter(pName));
@@ -199,105 +196,66 @@ public class Query {
     return q;
   }
 
-  /**
-   * @return the folderClassURI
-   */
   public String getFolderClassURI() {
     return folderClassURI;
   }
-
-  /**
-   * @return the requestedPropertyName
-   */
-  public String getRequestedPropertyName() {
-    return requestedPropertyName;
-  }
-
-  /**
-   * @return the requestedPropertyValue
-   */
-  public String getRequestedPropertyValue() {
-    return requestedPropertyValue;
-  }
-
   public ReturnType getReturnType() {
     return returnType;
   }
   
   
-  /**
-   * @return the arcProperty
-   */
   public Property getArcProperty() {
     return arcProperty;
   }
-
-  /**
-   * @return the requestedProperty
-   */
   public Property getRequestedProperty() {
     return requestedProperty;
   }
+  /*
+  public String getRequestedPropertyName() {
+    return requestedPropertyName;
+  }
+   */
+  public String getRequestedPropertyValue() {
+    return requestedPropertyValue;
+  }
+  public Property getOrderByProperty() {
+    return orderByProperty;
+  }
+  public Property getNotProperty() {
+    return notProperty;
+  }
 
   
-  /**
-   * @return the arc
-   */
   public String getArc() {
     return arc;
   }
-
-  /**
-   * @return the orderBy
-   */
   public String getOrderBy() {
     return orderBy;
   }
-  /**
-   * @return the folder class name
-   */
-  public String getFolderClassName() {
-    return folderClassName;
-  }
-  /**
-   * @return the propertyName
-   */
-  public String getPropertyName() {
-    return requestedPropertyName;
-  }
-  /**
-   * @return the displayParentName
-   */
   public boolean getDisplayParentName() {
     return displayParentName;
   }
-  /**
-   * @return the jsonDepth
-   */
   public int getJsonDepth() {
     return jsonDepth;
   }
-  /**
-   * @return the format
-   */
   public String getFormat() {
     return format;
   }
-  /**
-   * @return the jsCallback
-   */
   public String getJsCallback() {
     if (jsCallback == null && format.equals("js"))
       jsCallback ="oxpoints";
     return jsCallback;
   }
 
-  /**
-   * @return the orderByURI
-   */
-  public Property getOrderByProperty() {
-    return orderByProperty;
+  public String getUri() {
+    return uri;
   }
+
+  public String getType() {
+    return type;
+  }
+
+  
     
   
   public static 
@@ -325,7 +283,7 @@ public class Query {
     return tokens[1].replace('+', ' ');
   }
   
-  static private 
+  private static  
   String[] getTokens(String pathInfo) { 
     if (pathInfo == null) 
       return null;
@@ -430,29 +388,5 @@ public class Query {
     return getPropertyNamed(pName) != null;
  }
 
-  public void setResultsetSpec(String resultsetSpec) {
-    this.resultsetSpec = resultsetSpec;
-  }
-
-  public String getResultsetSpec() {
-    return resultsetSpec;
-  }
-
-  public String getUri() {
-    return uri;
-  }
-
-  public String getType() {
-    return type;
-  }
-
-  /**
-   * @return the notProperty
-   */
-  public Property getNotProperty() {
-    return notProperty;
-  }
-
-
-  
 }
+

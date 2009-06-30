@@ -219,7 +219,7 @@ public class OxPointsQueryServlet extends HttpServlet {
       for (String v : values) {
         if (requiresResource(prop)) {
           Resource r = getResource(v);
-          System.err.println("Found r: " + r + " for prop " + prop);
+          System.err.println("Found r: " + r + " for prop " + prop + " with value " + v);
           pool = becomeOrAdd(pool, snapshot.loadEntitiesWithProperty(prop, r));
         } else {
           pool = becomeOrAdd(pool, snapshot.loadEntitiesWithProperty(prop, v));
@@ -233,10 +233,8 @@ public class OxPointsQueryServlet extends HttpServlet {
     if (poolToAdd == null)
       throw new NullPointerException();
     if (pool == null) {
-      System.err.println("Returning new");
       return poolToAdd;
     } else {
-      System.err.println("Returning added");
       for (GabotoEntity e : poolToAdd.getEntities())
         pool.addEntity(e);
       return pool;

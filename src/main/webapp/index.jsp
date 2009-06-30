@@ -2,8 +2,7 @@
 <title>Mobile Portal for Oxford</title>
 <body>
 <h1>Mobile Portal for Oxford</h1>
-<p>This server will deliver Oxford 
-content in a form optimized for mobile
+<p>This server will deliver Oxford content in a form optimized for mobile
 devices, courtesy of <a href="http://erewhon.oucs.ox.ac.uk/">the Erewhon
 project</a>.  </p>
 <p>We'll be putting together material during 
@@ -16,35 +15,35 @@ material you think would be suitable.</p>
  <tr>
   <td>
    <p>
-<a href="OxPQ/timestamp">Milliseconds since the epoch when cache was created</a>
+<a href="timestamp">Milliseconds since the epoch when cache was created</a>
    </p>
   </td>
  </tr>
  <tr>
   <td>
    <p>
-<a href="OxPQ/all.xml">All</a>
+<a href="all.xml">All</a>
   </p>
  </td>
  <td>
   <p>
-<a href="OxPQ/all.kml">kml</a>
+<a href="all.kml">kml</a>
    </p>
   </td>
  <td>
   <p>
-<a href="OxPQ/all.json">json</a>
+<a href="all.json">json</a>
    </p>
   </td>
  </tr>
  <td>
   <p>
-<a href="OxPQ/all.js">js</a>
+<a href="all.js">js</a>
    </p>
   </td>
   <td>
    <p>
-<a href="OxPQ/all.gjson">gjson</a>
+<a href="all.gjson">gjson</a>
    </p>
   </td>
  </tr>
@@ -52,27 +51,27 @@ material you think would be suitable.</p>
  <tr>
   <td>
    <p>
-<a href="OxPQ/hasOUCSCode/mans|ball.xml">Mansfield or Balliol</a>
+<a href="hasOUCSCode/mans|ball.xml">Mansfield or Balliol</a>
    </p>
   </td>
   <td>
    <p>
-<a href="OxPQ/hasOUCSCode/mans|ball.kml">kml</a>
+<a href="hasOUCSCode/mans|ball.kml">kml</a>
    </p>
   </td>
   <td>
    <p>
-<a href="OxPQ/hasOUCSCode/mans|ball.json">json</a>
+<a href="hasOUCSCode/mans|ball.json">json</a>
    </p>
   </td>
   <td>
    <p>
-<a href="OxPQ/hasOUCSCode/mans|ball.js">js</a>
+<a href="hasOUCSCode/mans|ball.js">js</a>
    </p>
   </td>
   <td>
    <p>
-<a href="OxPQ/hasOUCSCode/mans|ball.gjson">gjson</a>
+<a href="hasOUCSCode/mans|ball.gjson">gjson</a>
    </p>
   </td>
  </tr>
@@ -80,27 +79,27 @@ material you think would be suitable.</p>
  <tr>
   <td>
    <p>
-<a href="OxPQ/subsetOf/2323314.xml">Subset of OUCS</a>
+<a href="subsetOf/2323314.xml">Subset of OUCS</a>
    </p>
   </td>
   <td>
    <p>
-<a href="OxPQ/subsetOf/2323314.kml">kml</a>
+<a href="subsetOf/2323314.kml">kml</a>
    </p>
   </td>
   <td>
    <p>
-<a href="OxPQ/subsetOf/2323314.json">json</a>
+<a href="subsetOf/2323314.json">json</a>
    </p>
   </td>
   <td>
    <p>
-<a href="OxPQ/subsetOf/2323314.js">js</a>
+<a href="subsetOf/2323314.js">js</a>
    </p>
   </td>
   <td>
    <p>
-<a href="OxPQ/subsetOf/2323314.gjson">gjson</a>
+<a href="subsetOf/2323314.gjson">gjson</a>
    </p>
   </td>
  </tr>
@@ -108,54 +107,54 @@ material you think would be suitable.</p>
  <tr>
   <td>
    <p>
-<a href="OxPQ/id/23233640.xml?arc=physicallyContainedWithin">Contained within (and included)</a>
+<a href="id/23233640.xml?arc=physicallyContainedWithin">Contained within (and included)</a>
    </p>
   </td>
   <td>
    <p>
-<a href="OxPQ/id/23233640.kml?arc=physicallyContainedWithin">kml</a>
+<a href="id/23233640.kml?arc=physicallyContainedWithin">kml</a>
    </p>
   </td>
   <td>
    <p>
-<a href="OxPQ/id/23233640.json?arc=physicallyContainedWithin">json</a>
+<a href="id/23233640.json?arc=physicallyContainedWithin">json</a>
    </p>
   </td>
   <td>
    <p>
-<a href="OxPQ/id/23233640.js?arc=physicallyContainedWithin">js</a>
+<a href="id/23233640.js?arc=physicallyContainedWithin">js</a>
    </p>
   </td>
   <td>
    <p>
-<a href="OxPQ/id/23233640.gjson?arc=physicallyContainedWithin">gjson</a>
+<a href="id/23233640.gjson?arc=physicallyContainedWithin">gjson</a>
    </p>
   </td>
  </tr>
  <tr>
   <td>
    <p>
-<a href="OxPQ/type/College.xml?not=hasITHomepage">Colleges without IT Homepages</a>
+<a href="type/College.xml?not=hasITHomepage">Colleges without IT Homepages</a>
    </p>
   </td>
   <td>
    <p>
-<a href="OxPQ/type/College.kml?not=hasITHomepage">kml</a>
+<a href="type/College.kml?not=hasITHomepage">kml</a>
    </p>
   </td>
   <td>
    <p>
-<a href="OxPQ/type/College.json?not=hasITHomepage">json</a>
+<a href="type/College.json?not=hasITHomepage">json</a>
    </p>
   </td>
   <td>
    <p>
-<a href="OxPQ/type/College.js?not=hasITHomepage">js</a>
+<a href="type/College.js?not=hasITHomepage">js</a>
    </p>
   </td>
   <td>
    <p>
-<a href="OxPQ/type/College.gjson?not=hasITHomepage">gjson</a>
+<a href="type/College.gjson?not=hasITHomepage">gjson</a>
    </p>
   </td>
  </tr>

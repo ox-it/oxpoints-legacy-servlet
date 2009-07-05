@@ -62,7 +62,6 @@ import org.oucs.gaboto.model.GabotoFactory;
 import org.oucs.gaboto.model.GabotoSnapshot;
 import org.oucs.gaboto.model.query.GabotoQuery;
 import org.oucs.gaboto.timedim.TimeInstant;
-import org.oucs.gaboto.util.GabotoOntologyLookup;
 import org.oucs.gaboto.vocabulary.OxPointsVocab;
 
 
@@ -170,7 +169,8 @@ public class OxPointsQueryServlet extends HttpServlet {
       }
       return;
     case META_TYPES:
-      output(GabotoOntologyLookup.getRegisteredEntityClassesAsClassNames(), query, response);
+      
+      output(snapshot.getGaboto().getConfig().getGabotoOntologyLookup().getRegisteredEntityClassesAsClassNames(), query, response);
       return;
     case ALL:
       output(GabotoEntityPool.createFrom(snapshot), query, response);
@@ -267,7 +267,7 @@ public class OxPointsQueryServlet extends HttpServlet {
 
     GabotoEntityPoolConfiguration conf = new GabotoEntityPoolConfiguration(snapshot);
     for (String t : types) {
-      if (!GabotoOntologyLookup.isValidName(t))
+      if (!snapshot.getGaboto().getConfig().getGabotoOntologyLookup().isValidName(t))
         throw new IllegalArgumentException("Found no URI matching type " + t);
       String typeURI = OxPointsVocab.NS + t;
       conf.addAcceptedType(typeURI);

@@ -127,8 +127,11 @@ public final class Query {
       uri = "http://m.ox.ac.uk/oxpoints/id/" + id;
       
       q.returnType = ReturnType.INDIVIDUAL;
-    } else if (resultsetSpec.startsWith("/type/") || resultsetSpec.startsWith("/class/")) {  
+    } else if (resultsetSpec.startsWith("/type/")) {  
       type = resultsetSpec.substring(6);
+      q.returnType = ReturnType.TYPE_COLLECTION;
+    } else if (resultsetSpec.startsWith("/class/")) {  
+      type = resultsetSpec.substring(7);
       q.returnType = ReturnType.TYPE_COLLECTION;
     } else if (startsWithPropertyName(resultsetSpec)) {
       q.requestedPropertyName = getPropertyName(resultsetSpec); 

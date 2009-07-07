@@ -77,6 +77,33 @@ Details of the OxPoints project can be found <a href="http://www.oucs.ox.ac.uk/o
    </p>
   </td>
  </tr>
+ <tr>
+  <td>
+   <p>
+<a href="hasOBNCode/106.xml">7-9 Banbury Road</a>
+   </p>
+  </td>
+  <td>
+   <p>
+<a href="hasOBNCode/106.kml">kml</a>
+   </p>
+  </td>
+  <td>
+   <p>
+<a href="hasOBNCode/106.json">json</a>
+   </p>
+  </td>
+  <td>
+   <p>
+<a href="hasOBNCode/106.js">js</a>
+   </p>
+  </td>
+  <td>
+   <p>
+<a href="hasOBNCode/106.gjson">gjson</a>
+   </p>
+  </td>
+ </tr>
 
  <tr>
   <td>

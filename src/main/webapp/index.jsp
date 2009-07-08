@@ -108,27 +108,27 @@ Details of the OxPoints project can be found <a href="http://www.oucs.ox.ac.uk/o
  <tr>
   <td>
    <p>
-<a href="subsetOf/23233141.xml">Subset of OUCS</a>
+<a href="subsetOf/23233567.xml">Subset of OUCS</a>
    </p>
   </td>
   <td>
    <p>
-<a href="subsetOf/23233141.kml">kml</a>
+<a href="subsetOf/23233567.kml">kml</a>
    </p>
   </td>
   <td>
    <p>
-<a href="subsetOf/23233141.json">json</a>
+<a href="subsetOf/23233567.json">json</a>
    </p>
   </td>
   <td>
    <p>
-<a href="subsetOf/23233141.js">js</a>
+<a href="subsetOf/23233567.js">js</a>
    </p>
   </td>
   <td>
    <p>
-<a href="subsetOf/23233141.gjson">gjson</a>
+<a href="subsetOf/23233567.gjson">gjson</a>
    </p>
   </td>
  </tr>
@@ -136,27 +136,27 @@ Details of the OxPoints project can be found <a href="http://www.oucs.ox.ac.uk/o
  <tr>
   <td>
    <p>
-<a href="id/23233640.xml?arc=physicallyContainedWithin">Contained within (and included)</a>
+<a href="id/23233603.xml?arc=physicallyContainedWithin">Contained within (and included)</a>
    </p>
   </td>
   <td>
    <p>
-<a href="id/23233640.kml?arc=physicallyContainedWithin">kml</a>
+<a href="id/23233603.kml?arc=physicallyContainedWithin">kml</a>
    </p>
   </td>
   <td>
    <p>
-<a href="id/23233640.json?arc=physicallyContainedWithin">json</a>
+<a href="id/23233603.json?arc=physicallyContainedWithin">json</a>
    </p>
   </td>
   <td>
    <p>
-<a href="id/23233640.js?arc=physicallyContainedWithin">js</a>
+<a href="id/23233603.js?arc=physicallyContainedWithin">js</a>
    </p>
   </td>
   <td>
    <p>
-<a href="id/23233640.gjson?arc=physicallyContainedWithin">gjson</a>
+<a href="id/23233603.gjson?arc=physicallyContainedWithin">gjson</a>
    </p>
   </td>
  </tr>

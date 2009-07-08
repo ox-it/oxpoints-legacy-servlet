@@ -14,7 +14,7 @@ Contact erewhon at oucs.ox.ac.uk if you have material you think would be suitabl
 Details of the OxPoints project can be found <a href="http://www.oucs.ox.ac.uk/oxpoints/">here</a>.
 </p>
 <h2>Examples</h2>
-<table>
+<table >
  <tr>
   <td>
    <p>
@@ -25,7 +25,7 @@ Details of the OxPoints project can be found <a href="http://www.oucs.ox.ac.uk/o
  <tr>
   <td>
    <p>
-<a href="all.xml">All</a>
+<a href="all.xml">All data held</a>
   </p>
  </td>
  <td>

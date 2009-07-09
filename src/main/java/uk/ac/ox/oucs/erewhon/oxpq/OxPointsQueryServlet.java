@@ -187,9 +187,33 @@ public class OxPointsQueryServlet extends HttpServlet {
     case TYPE_COLLECTION:
       output(loadPoolWithEntitiesOfType(query.getType()), query, response);
       return;
-    case COLLECTION:
+    case PROPERTY_ANY: // value null
       output(loadPoolWithEntitiesOfProperty(query.getRequestedProperty(), query.getRequestedPropertyValue()), query,
               response);
+      return;
+    case PROPERTY_SUBJECT:
+      String subjectValue = null;
+      if (query.isNeedsCodeLookup()) {
+        Property coding = Query.getPropertyFromAbreviation(query.getParticipantCoding());
+        GabotoEntityPool subjectPool = loadPoolWithEntitiesOfProperty(coding, query.getParticipantCode());
+        boolean found = false;
+        for (GabotoEntity subjectKey: subjectPool) { 
+          if (found)
+            throw new RuntimeException("Found two:" + subjectKey);
+          subjectValue = subjectKey.getUri();
+          found = true;
+        }
+      } else
+        subjectValue = query.getRequestedPropertyValue();
+      output(loadPoolWithEntitiesOfProperty(query.getRequestedProperty(), subjectValue), query, response);
+      return;
+    case PROPERTY_OBJECT: // Need test
+      String objectValue;
+      if (query.isNeedsCodeLookup())
+        objectValue = "";
+      else
+        objectValue = query.getRequestedPropertyValue();
+      output(loadPoolWithEntitiesOfProperty(query.getRequestedProperty(), objectValue), query, response);
       return;
     case NOT_FILTERED_TYPE_COLLECTION:
       GabotoEntityPool p = loadPoolWithEntitiesOfType(query.getType());

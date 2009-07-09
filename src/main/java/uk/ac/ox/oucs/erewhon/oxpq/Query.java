@@ -52,6 +52,13 @@ import com.hp.hpl.jena.rdf.model.Property;
 
 public final class Query {
   
+  
+  private String participantId;     // subject or object id
+  private String participantIdUri;  
+  private String participantCoding; // Coding system, other than id
+  private String participantCode;   
+  
+  private String type;
   private String arc = null;
   private String orderBy = null;
   private String requestedPropertyName = null;
@@ -69,15 +76,19 @@ public final class Query {
   
   private ReturnType returnType = ReturnType.ALL;
   private String folderClassURI = OxPointsVocab.NS + "College";
+  private boolean needsCodeLookup;
   
   public enum ReturnType {
-    META_TIMESTAMP, META_TYPES, ALL, TYPE_COLLECTION, COLLECTION, INDIVIDUAL, NOT_FILTERED_TYPE_COLLECTION 
+    META_TIMESTAMP, META_TYPES, ALL, TYPE_COLLECTION, 
+    INDIVIDUAL, 
+    NOT_FILTERED_TYPE_COLLECTION,
+    PROPERTY_ANY, 
+    PROPERTY_SUBJECT,
+    PROPERTY_OBJECT
   } 
   
   private static Map<String, String> namespacePrefixes = new TreeMap<String, String>();
-  private static String id;
-  private static String uri;
-  private static String type;
+  
   {
     // HACK the ordering so that oxpoints#subsetOf is prioritised over DC#subsetOf
     namespacePrefixes.put("1oxp:",   OxPointsVocab.NS);
@@ -123,21 +134,22 @@ public final class Query {
     } else if (resultsetSpec.startsWith("/all")) {
       q.returnType = ReturnType.ALL;
     } else if (resultsetSpec.startsWith("/id/")) {
-      id = resultsetSpec.substring(4);
-      uri = "http://m.ox.ac.uk/oxpoints/id/" + id;
+      q.participantId = resultsetSpec.substring(4);
+      q.participantIdUri = "http://m.ox.ac.uk/oxpoints/id/" + q.participantId;
       
       q.returnType = ReturnType.INDIVIDUAL;
     } else if (resultsetSpec.startsWith("/type/")) {  
-      type = resultsetSpec.substring(6);
+      q.type = resultsetSpec.substring(6);
       q.returnType = ReturnType.TYPE_COLLECTION;
     } else if (resultsetSpec.startsWith("/class/")) {  
-      type = resultsetSpec.substring(7);
+      q.type = resultsetSpec.substring(7);
       q.returnType = ReturnType.TYPE_COLLECTION;
+    } else if (parseTemplate(resultsetSpec,q)) {
     } else if (startsWithPropertyName(resultsetSpec)) {
       q.requestedPropertyName = getPropertyName(resultsetSpec); 
       q.requestedPropertyValue = getPropertyValue(resultsetSpec); 
       q.requestedProperty = getPropertyFromAbreviation(q.requestedPropertyName);
-      q.returnType = ReturnType.COLLECTION;
+      q.returnType = ReturnType.PROPERTY_ANY;
     } else
       throw new AnticipatedException("Unexpected path info " + pathInfo);
     
@@ -251,7 +263,7 @@ public final class Query {
   }
 
   public String getUri() {
-    return uri;
+    return participantIdUri;
   }
 
   public String getType() {
@@ -259,13 +271,90 @@ public final class Query {
   }
 
   
-    
+  public static 
+  boolean parseTemplate(String pathInfo, Query q) { 
+    String[] tokens = getTokens(pathInfo);
+    if (tokens == null) return false;
+    switch (tokens.length) {
+      case 0: 
+        return false;
+      case 1: 
+        q.requestedProperty = getPropertyFromAbreviation(tokens[0]);
+        if (q.requestedProperty != null) {
+          q.requestedPropertyName = tokens[0];
+          q.returnType = ReturnType.PROPERTY_ANY;
+          return true;
+        } else if (isAnEntitySpec(tokens[0],q)) { 
+          q.returnType = ReturnType.INDIVIDUAL;
+          return true;          
+        } else
+          return false;
+      case 2: 
+        q.requestedProperty = getPropertyFromAbreviation(tokens[0]);
+        if (q.requestedProperty != null) {
+          q.requestedPropertyName = tokens[0];
+          if (isAnEntitySpec(tokens[1],q)) {
+            q.returnType = ReturnType.PROPERTY_SUBJECT; // _ prop obj
+            return true;
+          } else
+            return false;
+        } else if (isAnEntitySpec(tokens[0],q)) {
+          q.requestedProperty = getPropertyFromAbreviation(tokens[1]);
+          if (q.requestedProperty != null) {
+            q.requestedPropertyName = tokens[1];
+            q.returnType = ReturnType.PROPERTY_OBJECT; // subj prop _
+            return true;          
+          } else
+            return false;
+        } else { 
+          return false;          
+        }
+     default: 
+       throw new RuntimeException("Fell through case:" + tokens.length); 
+    }
+  }
+  
+  static 
+  boolean isAnEntitySpec(String it, Query q) { 
+    if (it.startsWith("oucs:")) {
+      q.needsCodeLookup = true;
+      q.participantCoding = "oucs";
+      q.participantCode = it.substring(5);
+      return false;
+    } else if (it.startsWith("olis:")) {
+      q.needsCodeLookup = true;
+      q.participantCoding = "oucs";
+      q.participantCode = it.substring(5);
+      return false;
+    } else if (it.startsWith("obn:")) {
+      q.needsCodeLookup = true;
+      q.participantCoding = "obn";
+      q.participantCode = it.substring(4);
+      return false;
+    } else if (it.startsWith("id:")) {
+      q.requestedPropertyValue = it.substring(3); 
+      q.participantId = q.requestedPropertyValue;
+      q.participantIdUri = "http://m.ox.ac.uk/oxpoints/id/" + q.participantId;
+      return true;
+    } else if (it.matches("^[0-9]+$")) { 
+      q.requestedPropertyValue = it;       
+      q.participantId = it;
+      q.participantIdUri = "http://m.ox.ac.uk/oxpoints/id/" + q.participantId;
+      return true;
+    } else {
+      q.needsCodeLookup = true;
+      q.participantCoding = "oucs";
+      q.participantCode = it;
+      return true;
+    }
+  }
   
   public static 
   boolean startsWithPropertyName(String pathInfo) {
     return getPropertyName(pathInfo) != null;
   }
-  public Property getProperty(String pathInfo) { 
+  public 
+  Property getProperty(String pathInfo) { 
     String[] tokens = getTokens(pathInfo);
     return getPropertyFromAbreviation(tokens[0]); 
   }
@@ -305,9 +394,9 @@ public final class Query {
   }
 
 
-  private static Property getPropertyFromAbreviation(String propertyAbreviation) {
+  public static 
+  Property getPropertyFromAbreviation(String propertyAbreviation) {
     for (String prefix : namespacePrefixes.keySet()) {
-      System.err.println("Que:"+prefix);
       String key = namespacePrefixes.get(prefix) + propertyAbreviation;
       Property p = getPropertyNamed(key);
       System.err.println("Que:"+key + "=" + p);
@@ -347,7 +436,8 @@ public final class Query {
       return true;
     return false;
   }
-  static Property getPropertyNamed(String pName) { 
+  public static 
+  Property getPropertyNamed(String pName) { 
     if (OxPointsVocab.MODEL.getObjectProperty(pName) != null)
       return OxPointsVocab.MODEL.getObjectProperty(pName);
     if (VCard.MODEL.getObjectProperty(pName) != null)
@@ -390,6 +480,18 @@ public final class Query {
   static boolean isValidPropertyName(String pName) { 
     return getPropertyNamed(pName) != null;
  }
+
+  public String getParticipantCoding() {
+    return participantCoding;
+  }
+
+  public String getParticipantCode() {
+    return participantCode;
+  }
+
+  public boolean isNeedsCodeLookup() {
+    return needsCodeLookup;
+  }
 
 }
 

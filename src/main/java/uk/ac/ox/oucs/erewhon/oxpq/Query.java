@@ -318,19 +318,19 @@ public final class Query {
   boolean isAnEntitySpec(String it, Query q) { 
     if (it.startsWith("oucs:")) {
       q.needsCodeLookup = true;
-      q.participantCoding = "oucs";
+      q.participantCoding = "hasOUCSCode";
       q.participantCode = it.substring(5);
-      return false;
+      return true;
     } else if (it.startsWith("olis:")) {
       q.needsCodeLookup = true;
-      q.participantCoding = "oucs";
+      q.participantCoding = "hasOLISCode";
       q.participantCode = it.substring(5);
-      return false;
+      return true;
     } else if (it.startsWith("obn:")) {
       q.needsCodeLookup = true;
-      q.participantCoding = "obn";
+      q.participantCoding = "hasOBNCode";
       q.participantCode = it.substring(4);
-      return false;
+      return true;
     } else if (it.startsWith("id:")) {
       q.requestedPropertyValue = it.substring(3); 
       q.participantId = q.requestedPropertyValue;
@@ -342,10 +342,7 @@ public final class Query {
       q.participantIdUri = "http://m.ox.ac.uk/oxpoints/id/" + q.participantId;
       return true;
     } else {
-      q.needsCodeLookup = true;
-      q.participantCoding = "oucs";
-      q.participantCode = it;
-      return true;
+      return false;
     }
   }
   

@@ -194,13 +194,17 @@ public class OxPointsQueryServlet extends HttpServlet {
     case PROPERTY_SUBJECT:
       String subjectValue = null;
       if (query.isNeedsCodeLookup()) {
+        System.err.println("need");
         Property coding = Query.getPropertyFromAbreviation(query.getParticipantCoding());
-        GabotoEntityPool subjectPool = loadPoolWithEntitiesOfProperty(coding, query.getParticipantCode());
+        System.err.println("Here:" + query.getParticipantCode());
+        
+        GabotoEntityPool subjectPool = snapshot.loadEntitiesWithProperty(coding, query.getParticipantCode());
         boolean found = false;
         for (GabotoEntity subjectKey: subjectPool) { 
           if (found)
             throw new RuntimeException("Found two:" + subjectKey);
           subjectValue = subjectKey.getUri();
+          System.err.println("found" + subjectValue);
           found = true;
         }
       } else
@@ -208,10 +212,22 @@ public class OxPointsQueryServlet extends HttpServlet {
       output(loadPoolWithEntitiesOfProperty(query.getRequestedProperty(), subjectValue), query, response);
       return;
     case PROPERTY_OBJECT: // Need test
-      String objectValue;
-      if (query.isNeedsCodeLookup())
-        objectValue = "";
-      else
+      String objectValue = null;
+      if (query.isNeedsCodeLookup()) {
+        System.err.println("need");
+        Property coding = Query.getPropertyFromAbreviation(query.getParticipantCoding());
+        System.err.println("Here:" + query.getParticipantCode());
+        
+        GabotoEntityPool subjectPool = snapshot.loadEntitiesWithProperty(coding, query.getParticipantCode());
+        boolean found = false;
+        for (GabotoEntity subjectKey: subjectPool) { 
+          if (found)
+            throw new RuntimeException("Found two:" + subjectKey);
+          objectValue = subjectKey.getUri();
+          System.err.println("found" + objectValue);
+          found = true;
+        }
+      } else
         objectValue = query.getRequestedPropertyValue();
       output(loadPoolWithEntitiesOfProperty(query.getRequestedProperty(), objectValue), query, response);
       return;
@@ -240,7 +256,9 @@ public class OxPointsQueryServlet extends HttpServlet {
     } else {
       String values[] = value.split("[|]");
 
+      System.err.println(prop + " for  values " + value);
       for (String v : values) {
+        System.err.println("for  value " + v);
         if (requiresResource(prop)) {
           Resource r = getResource(v);
           System.err.println("Found r: " + r + " for prop " + prop + " with value " + v);
@@ -266,7 +284,9 @@ public class OxPointsQueryServlet extends HttpServlet {
   }
 
   private Resource getResource(String v) {
-    String vUri = config.getNSData() + v;
+    String vUri = v;
+    if (!vUri.startsWith(config.getNSData()))
+        vUri = config.getNSData() + v;
     return snapshot.getResource(vUri);
   }
 

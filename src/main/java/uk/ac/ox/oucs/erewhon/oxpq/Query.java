@@ -486,7 +486,7 @@ public final class Query {
     return participantCode;
   }
 
-  public boolean isNeedsCodeLookup() {
+  public boolean needsCodeLookup() {
     return needsCodeLookup;
   }
 

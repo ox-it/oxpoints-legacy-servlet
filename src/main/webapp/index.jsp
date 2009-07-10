@@ -187,6 +187,33 @@ Details of the OxPoints project can be found <a href="http://www.oucs.ox.ac.uk/o
    </p>
   </td>
  </tr>
+ <tr>
+  <td>
+   <p>
+<a href="occupies/obn:173.xml">Occupies Keble Road</a>
+   </p>
+  </td>
+  <td>
+   <p>
+<a href="occupies/obn:173.kml">kml</a>
+   </p>
+  </td>
+  <td>
+   <p>
+<a href="occupies/obn:173.json">json</a>
+   </p>
+  </td>
+  <td>
+   <p>
+<a href="occupies/obn:173.js">js</a>
+   </p>
+  </td>
+  <td>
+   <p>
+<a href="occupies/obn:173.gjson">gjson</a>
+   </p>
+  </td>
+ </tr>
 </table>
 
 <hr>

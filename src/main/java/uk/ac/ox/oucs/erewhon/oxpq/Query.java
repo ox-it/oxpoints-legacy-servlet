@@ -54,7 +54,7 @@ public final class Query {
   
   
   private String participantId;     // subject or object id
-  private String participantIdUri;  
+  private String participantUri;  
   private String participantCoding; // Coding system, other than id
   private String participantCode;   
   
@@ -134,9 +134,8 @@ public final class Query {
     } else if (resultsetSpec.startsWith("/all")) {
       q.returnType = ReturnType.ALL;
     } else if (resultsetSpec.startsWith("/id/")) {
-      q.participantId = resultsetSpec.substring(4);
-      q.participantIdUri = "http://m.ox.ac.uk/oxpoints/id/" + q.participantId;
-      
+      q.setParticipantId(resultsetSpec.substring(4));
+      q.participantUri = "http://m.ox.ac.uk/oxpoints/id/" + q.participantId;
       q.returnType = ReturnType.INDIVIDUAL;
     } else if (resultsetSpec.startsWith("/type/")) {  
       q.type = resultsetSpec.substring(6);
@@ -263,7 +262,7 @@ public final class Query {
   }
 
   public String getUri() {
-    return participantIdUri;
+    return participantUri;
   }
 
   public String getType() {
@@ -333,13 +332,13 @@ public final class Query {
       return true;
     } else if (it.startsWith("id:")) {
       q.requestedPropertyValue = it.substring(3); 
-      q.participantId = q.requestedPropertyValue;
-      q.participantIdUri = "http://m.ox.ac.uk/oxpoints/id/" + q.participantId;
+      q.setParticipantId(q.requestedPropertyValue);
+      q.participantUri = "http://m.ox.ac.uk/oxpoints/id/" + q.participantId;
       return true;
     } else if (it.matches("^[0-9]+$")) { 
       q.requestedPropertyValue = it;       
-      q.participantId = it;
-      q.participantIdUri = "http://m.ox.ac.uk/oxpoints/id/" + q.participantId;
+      q.setParticipantId(it);
+      q.participantUri = "http://m.ox.ac.uk/oxpoints/id/" + q.participantId;
       return true;
     } else {
       return false;
@@ -488,6 +487,26 @@ public final class Query {
 
   public boolean needsCodeLookup() {
     return needsCodeLookup;
+  }
+
+  public void setParticipantUri(String uri) {
+    this.participantUri = uri;
+  }
+
+  public String getParticipantUri() {
+    return participantUri;
+  }
+
+  /**
+   * @param participantId the participantId to set
+   */
+  void setParticipantId(String participantId) {
+    try { 
+      new Integer(participantId); 
+    } catch (NumberFormatException e){
+      throw new AnticipatedException("Invalid id " + participantId);
+    }
+    this.participantId = participantId;
   }
 
 }

@@ -172,7 +172,6 @@ public class OxPointsQueryServlet extends HttpServlet {
       }
       return;
     case META_TYPES:
-      
       output(snapshot.getGaboto().getConfig().getGabotoOntologyLookup().getRegisteredEntityClassesAsClassNames(), query, response);
       return;
     case ALL:
@@ -180,11 +179,12 @@ public class OxPointsQueryServlet extends HttpServlet {
       return;
     case INDIVIDUAL:
       GabotoEntityPool pool = new GabotoEntityPool(gaboto, snapshot);
+      establishParticipantUri(query);
       try {
         pool.addEntity(snapshot.loadEntity(query.getUri()));
       } catch (ResourceDoesNotExistException e) {
-        throw new AnticipatedException("Resource not found with uri " + query.getUri(), e);
-      }
+        throw new AnticipatedException("No resource found with uri " + query.getUri(), e);
+      }        
       output(pool, query, response);
       return;
     case TYPE_COLLECTION:
@@ -195,47 +195,27 @@ public class OxPointsQueryServlet extends HttpServlet {
               response);
       return;
     case PROPERTY_SUBJECT:
-      String objectValue = null;
-      if (query.needsCodeLookup()) {
-        System.err.println("need");
-        Property coding = Query.getPropertyFromAbreviation(query.getParticipantCoding());
-        System.err.println("Here:" + query.getParticipantCode());
-        
-        GabotoEntityPool objectPool = snapshot.loadEntitiesWithProperty(coding, query.getParticipantCode());
-        boolean found = false;
-        for (GabotoEntity objectKey: objectPool) { 
-          if (found)
-            throw new RuntimeException("Found two:" + objectKey);
-          objectValue = objectKey.getUri();
-          System.err.println("obj" + objectValue);
-          found = true;
-        }
-      } else
-        objectValue = query.getRequestedPropertyValue();
-      output(loadPoolWithEntitiesOfProperty(query.getRequestedProperty(), objectValue), query, response);
+      GabotoEntityPool subjectPool = null;
+      if (requiresResource(query.getRequestedProperty())) {
+        establishParticipantUri(query);
+        if (query.getUri() == null)
+          throw new AnticipatedException("Resource not found with coding " + query.getParticipantCoding() + 
+              " and value " + query.getParticipantCode());
+        GabotoEntity object = snapshot.loadEntity(query.getUri());
+        subjectPool = loadPoolWithActiveParticipants(object, query.getRequestedProperty()); 
+      } else { 
+        subjectPool = loadPoolWithEntitiesOfProperty(query.getRequestedProperty(), query.getRequestedPropertyValue());         
+      }
+      output(subjectPool, query, response);
       return;
     case PROPERTY_OBJECT: 
-      String subjectURI = null;
-      GabotoEntity subject = null; 
-      if (query.needsCodeLookup()) {
-        Property coding = Query.getPropertyFromAbreviation(query.getParticipantCoding());
-        System.err.println("Here:" + query.getParticipantCode());
-        
-        GabotoEntityPool subjectPool = snapshot.loadEntitiesWithProperty(coding, query.getParticipantCode());
-        boolean found = false;
-        for (GabotoEntity key: subjectPool) { 
-          if (found)
-            throw new RuntimeException("Found two:" + key);
-          subjectURI = key.getUri();
-          subject = key;
-          System.err.println("subj" + subjectURI);
-          found = true;
-        }
-      } else
-        subject = snapshot.loadEntity(query.getUri());
+      establishParticipantUri(query);
+      if (query.getUri() == null)
+        throw new AnticipatedException("Resource not found with coding " + query.getParticipantCoding() + 
+            " and value " + query.getParticipantCode());
+      GabotoEntity subject = snapshot.loadEntity(query.getUri());
+      
       GabotoEntityPool objectPool = loadPoolWithPassiveParticipants(subject, query.getRequestedProperty());
-      if (objectPool == null )
-        throw new AnticipatedException("No resources found");
       output(objectPool, query, response);
       return;
     case NOT_FILTERED_TYPE_COLLECTION:
@@ -255,6 +235,7 @@ public class OxPointsQueryServlet extends HttpServlet {
   }
 
   private GabotoEntityPool loadPoolWithEntitiesOfProperty(Property prop, String value) {
+    System.err.println("loadPoolWithEntitiesOfProperty" + prop + ":" + value);
     if (prop == null)
       throw new NullPointerException();
     GabotoEntityPool pool = null;
@@ -265,6 +246,7 @@ public class OxPointsQueryServlet extends HttpServlet {
       for (String v : values) {
         if (requiresResource(prop)) {
           Resource r = getResource(v);
+          System.err.println("required resource " + r);
           pool = becomeOrAdd(pool, snapshot.loadEntitiesWithProperty(prop, r));
         } else {
           pool = becomeOrAdd(pool, snapshot.loadEntitiesWithProperty(prop, v));
@@ -273,15 +255,13 @@ public class OxPointsQueryServlet extends HttpServlet {
     }
     return pool;
   }
-  
   @SuppressWarnings("unchecked")
-  private GabotoEntityPool loadPoolWithPassiveParticipants(GabotoEntity activeParticipant, Property prop) { 
+  private GabotoEntityPool loadPoolWithActiveParticipants(GabotoEntity passiveParticipant, Property prop) { 
     if (prop == null)
       throw new NullPointerException();
-    GabotoEntityPool pool = null;
-    Set<Entry<String, Object>> directProperties = activeParticipant.getAllDirectProperties().entrySet();
-    boolean foundOne = false;
-    pool = new GabotoEntityPool(gaboto, snapshot);
+    GabotoEntityPool pool = new GabotoEntityPool(gaboto, snapshot);
+    System.err.println(passiveParticipant.getUri() + "  prop " + prop + " which ");
+    Set<Entry<String, Object>> directProperties = passiveParticipant.getAllPassiveProperties().entrySet(); 
     for (Entry<String, Object> entry : directProperties) {
       if (entry.getKey().equals(prop.getURI())) {
         if (entry.getValue() != null) {
@@ -290,12 +270,10 @@ public class OxPointsQueryServlet extends HttpServlet {
             for (Object e : them) { 
               if (e instanceof GabotoEntity) {
                 pool.add((GabotoEntity)e);
-                foundOne = true;
               }
             }
           } else if (entry.getValue() instanceof GabotoEntity) { 
             pool.add((GabotoEntity)entry.getValue());            
-            foundOne = true;
           } else { 
             System.err.println("Ignoring:" + entry.getKey());
           }
@@ -306,13 +284,63 @@ public class OxPointsQueryServlet extends HttpServlet {
         System.err.println("Ignoring:" + entry.getKey());
       }
     }
-    if (foundOne)
-      return pool;
-    else
-      return null;
+    return pool;
+  }
+  
+
+  private void establishParticipantUri(Query query) { 
+    if (query.needsCodeLookup()) {
+      System.err.println("need");
+      Property coding = Query.getPropertyFromAbreviation(query.getParticipantCoding());
+      System.err.println("establishUri" + query.getParticipantCode());
+      
+      GabotoEntityPool objectPool = snapshot.loadEntitiesWithProperty(coding, query.getParticipantCode());
+      boolean found = false;
+      for (GabotoEntity objectKey: objectPool) { 
+        if (found)
+          throw new RuntimeException("Found two:" + objectKey);
+        query.setParticipantUri(objectKey.getUri());
+        found = true;
+      }
+    }
+    if (query.getParticipantUri() == null)
+      throw new AnticipatedException("No resource found with coding " + query.getParticipantCoding() + 
+          " and value " + query.getParticipantCode());
+  }
+  @SuppressWarnings("unchecked")
+  private GabotoEntityPool loadPoolWithPassiveParticipants(GabotoEntity activeParticipant, Property prop) { 
+    if (prop == null)
+      throw new NullPointerException();
+    GabotoEntityPool pool = new GabotoEntityPool(gaboto, snapshot);
+    System.err.println(activeParticipant.getUri() + "  prop " + prop + " which ");
+    Set<Entry<String, Object>> directProperties = activeParticipant.getAllDirectProperties().entrySet(); 
+    for (Entry<String, Object> entry : directProperties) {
+      if (entry.getKey().equals(prop.getURI())) {
+        if (entry.getValue() != null) {
+          if (entry.getValue() instanceof HashSet) { 
+            HashSet<Object> them = (HashSet<Object>)entry.getValue(); 
+            for (Object e : them) { 
+              if (e instanceof GabotoEntity) {
+                pool.add((GabotoEntity)e);
+              }
+            }
+          } else if (entry.getValue() instanceof GabotoEntity) { 
+            pool.add((GabotoEntity)entry.getValue());            
+          } else { 
+            System.err.println("Ignoring:" + entry.getKey());
+          }
+        } else { 
+          System.err.println("Ignoring:" + entry.getKey());
+        }
+      } else { 
+        System.err.println("Ignoring:" + entry.getKey());
+      }
+    }
+    return pool;
   }
 
   private GabotoEntityPool becomeOrAdd(GabotoEntityPool pool, GabotoEntityPool poolToAdd) {
+    System.err.println("BecomeOrAdd" + pool);
     if (poolToAdd == null)
       throw new NullPointerException();
     if (pool == null) {
@@ -442,7 +470,6 @@ public class OxPointsQueryServlet extends HttpServlet {
       response.setContentType("text/javascript");
     } else if (query.getFormat().equals("xml")) {
 
-      System.err.println("Pool has " + pool.getSize() + " elements");
       EntityPoolTransformer transformer;
       try {
         transformer = RDFPoolTransformerFactory.getRDFPoolTransformer(GabotoQuery.FORMAT_RDF_XML_ABBREV);
@@ -451,6 +478,19 @@ public class OxPointsQueryServlet extends HttpServlet {
         throw new IllegalArgumentException(e);
       }
       response.setContentType("text/xml");
+    } else if (query.getFormat().equals("txt")) {
+      try { 
+        for (GabotoEntity entity: pool.getEntities()) { 
+          response.getWriter().write(entity.toString() + "\n");
+          for (Entry<String, Object> entry : entity.getAllDirectProperties().entrySet()) { 
+            if (entry.getValue() != null)
+              response.getWriter().write("  " + entry.getKey() + " : " + entry.getValue() + "\n");
+          }
+        }
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+      response.setContentType("text/plain");
     } else {
       output = runGPSBabel(createKml(pool, query), "kml", query.getFormat());
       if (output.equals(""))

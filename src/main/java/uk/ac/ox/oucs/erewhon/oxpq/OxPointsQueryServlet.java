@@ -121,6 +121,12 @@ public class OxPointsQueryServlet extends HttpServlet {
   public void doGet(HttpServletRequest request, HttpServletResponse response) {
     try {
       outputPool(request, response);
+    } catch (ResourceNotFoundException e) {
+      try {
+        response.sendError(404, e.getMessage());
+      } catch (IOException e1) {
+        error(request, response, new AnticipatedException("Problem reporting error: " + e.getMessage(),e1));
+      }
     } catch (AnticipatedException e) {
       error(request, response, e);
     }
@@ -161,7 +167,7 @@ public class OxPointsQueryServlet extends HttpServlet {
     return "Tim Pizey";
   }
 
-  void outputPool(HttpServletRequest request, HttpServletResponse response) {
+  void outputPool(HttpServletRequest request, HttpServletResponse response) throws ResourceNotFoundException {
     Query query = Query.fromRequest(request);
     switch (query.getReturnType()) {
     case META_TIMESTAMP:
@@ -183,8 +189,8 @@ public class OxPointsQueryServlet extends HttpServlet {
       try {
         pool.addEntity(snapshot.loadEntity(query.getUri()));
       } catch (ResourceDoesNotExistException e) {
-        throw new AnticipatedException("No resource found with uri " + query.getUri(), e);
-      }        
+        throw new ResourceNotFoundException("Resource not found with uri " + query.getUri(), e);
+      }
       output(pool, query, response);
       return;
     case TYPE_COLLECTION:
@@ -199,7 +205,7 @@ public class OxPointsQueryServlet extends HttpServlet {
       if (requiresResource(query.getRequestedProperty())) {
         establishParticipantUri(query);
         if (query.getUri() == null)
-          throw new AnticipatedException("Resource not found with coding " + query.getParticipantCoding() + 
+          throw new ResourceNotFoundException("Resource not found with coding " + query.getParticipantCoding() + 
               " and value " + query.getParticipantCode());
         GabotoEntity object = snapshot.loadEntity(query.getUri());
         subjectPool = loadPoolWithActiveParticipants(object, query.getRequestedProperty()); 
@@ -211,7 +217,7 @@ public class OxPointsQueryServlet extends HttpServlet {
     case PROPERTY_OBJECT: 
       establishParticipantUri(query);
       if (query.getUri() == null)
-        throw new AnticipatedException("Resource not found with coding " + query.getParticipantCoding() + 
+        throw new ResourceNotFoundException("Resource not found with coding " + query.getParticipantCoding() + 
             " and value " + query.getParticipantCode());
       GabotoEntity subject = snapshot.loadEntity(query.getUri());
       
@@ -246,7 +252,7 @@ public class OxPointsQueryServlet extends HttpServlet {
       for (String v : values) {
         if (requiresResource(prop)) {
           Resource r = getResource(v);
-          System.err.println("required resource " + r);
+          System.err.println("About to load " + prop + " with value " + r);
           pool = becomeOrAdd(pool, snapshot.loadEntitiesWithProperty(prop, r));
         } else {
           pool = becomeOrAdd(pool, snapshot.loadEntitiesWithProperty(prop, v));
@@ -288,7 +294,7 @@ public class OxPointsQueryServlet extends HttpServlet {
   }
   
 
-  private void establishParticipantUri(Query query) { 
+  private void establishParticipantUri(Query query) throws ResourceNotFoundException { 
     if (query.needsCodeLookup()) {
       System.err.println("need");
       Property coding = Query.getPropertyFromAbreviation(query.getParticipantCoding());
@@ -304,7 +310,7 @@ public class OxPointsQueryServlet extends HttpServlet {
       }
     }
     if (query.getParticipantUri() == null)
-      throw new AnticipatedException("No resource found with coding " + query.getParticipantCoding() + 
+      throw new ResourceNotFoundException("No resource found with coding " + query.getParticipantCoding() + 
           " and value " + query.getParticipantCode());
   }
   @SuppressWarnings("unchecked")
@@ -346,8 +352,9 @@ public class OxPointsQueryServlet extends HttpServlet {
     if (pool == null) {
       return poolToAdd;
     } else {
-      for (GabotoEntity e : poolToAdd.getEntities())
+      for (GabotoEntity e : poolToAdd.getEntities()) {
         pool.addEntity(e);
+      }
       return pool;
     }
   }
@@ -469,7 +476,6 @@ public class OxPointsQueryServlet extends HttpServlet {
         output = query.getJsCallback() + "(" + output + ");";
       response.setContentType("text/javascript");
     } else if (query.getFormat().equals("xml")) {
-
       EntityPoolTransformer transformer;
       try {
         transformer = RDFPoolTransformerFactory.getRDFPoolTransformer(GabotoQuery.FORMAT_RDF_XML_ABBREV);

@@ -67,9 +67,6 @@ import org.oucs.gaboto.model.query.GabotoQuery;
 import org.oucs.gaboto.timedim.TimeInstant;
 import org.oucs.gaboto.vocabulary.OxPointsVocab;
 
-import uk.ac.ox.oucs.oxpoints.gaboto.entities.OxpEntity;
-
-
 import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.Resource;
 
@@ -214,7 +211,7 @@ public class OxPointsQueryServlet extends HttpServlet {
         GabotoEntityPool creationPool = GabotoEntityPool.createFrom(snapshot);
         System.err.println("CreationPool size " + creationPool.size());
         object.setCreatedFromPool(creationPool);
-        subjectPool = loadPoolWithActiveParticipants2(object, query.getRequestedProperty()); 
+        subjectPool = loadPoolWithActiveParticipants(object, query.getRequestedProperty()); 
       } else { 
         subjectPool = loadPoolWithEntitiesOfProperty(query.getRequestedProperty(), query.getRequestedPropertyValue());         
       }
@@ -268,7 +265,6 @@ public class OxPointsQueryServlet extends HttpServlet {
     return pool;
   }
   
-  /* 
   @SuppressWarnings("unchecked")
   private GabotoEntityPool loadPoolWithActiveParticipants(GabotoEntity passiveParticipant, Property prop) { 
     if (prop == null)
@@ -302,36 +298,6 @@ public class OxPointsQueryServlet extends HttpServlet {
     }
     return pool;
   }
-  */
-  @SuppressWarnings("unchecked")
-  private GabotoEntityPool loadPoolWithActiveParticipants2(GabotoEntity passiveParticipant, Property prop) { 
-    if (prop == null)
-      throw new NullPointerException();
-    GabotoEntityPool pool = new GabotoEntityPool(gaboto, snapshot);
-    GabotoEntityPool allEntitiesWithProp = snapshot.loadEntitiesWithProperty(prop);
-    for(GabotoEntity e : allEntitiesWithProp.getEntities()) {
-      if (e.getPropertyValue(prop) != null) {
-        if (e.getPropertyValue(prop) instanceof HashSet) { 
-          for (Object ent : (HashSet)e.getPropertyValue(prop)) { 
-            if (((OxpEntity)ent).getUri().equals(passiveParticipant.getUri())) { 
-              System.err.println("FOUND" + ((OxpEntity)ent).getUri());
-              System.err.println("Adding" + e);
-              pool.add(e);
-            }
-          }
-        } else if (e.getPropertyValue(prop) instanceof OxpEntity) 
-          if (((OxpEntity)e.getPropertyValue(prop)).getUri().equals(passiveParticipant.getUri())) { 
-            System.err.println(((OxpEntity)e.getPropertyValue(prop)).getUri());
-            System.err.println("FOUND" + ((OxpEntity)e).getUri());
-            pool.add(e);
-            System.err.println("Adding" + e);
-          }
-      }
-    }
-    
-    return pool;
-  }
-  
 
   private void establishParticipantUri(Query query) throws ResourceNotFoundException { 
     if (query.needsCodeLookup()) {

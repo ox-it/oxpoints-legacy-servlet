@@ -49,21 +49,20 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.log4j.Logger;
 import org.oucs.gaboto.GabotoConfiguration;
-import org.oucs.gaboto.GabotoLibrary;
-import org.oucs.gaboto.entities.GabotoEntity;
+import org.oucs.gaboto.GabotoFactory;
 import org.oucs.gaboto.entities.pool.GabotoEntityPool;
 import org.oucs.gaboto.entities.pool.GabotoEntityPoolConfiguration;
 import org.oucs.gaboto.transformation.EntityPoolTransformer;
+import org.oucs.gaboto.transformation.GeoJSONPoolTransfomer;
+import org.oucs.gaboto.transformation.JSONPoolTransformer;
+import org.oucs.gaboto.transformation.KMLPoolTransformer;
 import org.oucs.gaboto.transformation.RDFPoolTransformerFactory;
-import org.oucs.gaboto.transformation.json.GeoJSONPoolTransfomer;
-import org.oucs.gaboto.transformation.json.JSONPoolTransformer;
-import org.oucs.gaboto.transformation.kml.KMLPoolTransformer;
-import org.oucs.gaboto.exceptions.ResourceDoesNotExistException;
-import org.oucs.gaboto.exceptions.UnsupportedFormatException;
 import org.oucs.gaboto.model.Gaboto;
-import org.oucs.gaboto.model.GabotoFactory;
 import org.oucs.gaboto.model.GabotoSnapshot;
+import org.oucs.gaboto.model.ResourceDoesNotExistException;
 import org.oucs.gaboto.model.query.GabotoQuery;
+import org.oucs.gaboto.model.query.UnsupportedQueryFormatException;
+import org.oucs.gaboto.nodes.GabotoEntity;
 import org.oucs.gaboto.timedim.TimeInstant;
 import org.oucs.gaboto.vocabulary.OxPointsVocab;
 
@@ -103,7 +102,7 @@ public class OxPointsQueryServlet extends HttpServlet {
     logger.debug("init");
     config = GabotoConfiguration.fromConfigFile();
 
-    GabotoLibrary.init(config);
+    GabotoFactory.init(config);
     gaboto = GabotoFactory.getEmptyInMemoryGaboto();
 
     gaboto.read(getResourceOrDie("graphs.rdf"), getResourceOrDie("cdg.rdf"));
@@ -186,11 +185,7 @@ public class OxPointsQueryServlet extends HttpServlet {
     case INDIVIDUAL:
       GabotoEntityPool pool = new GabotoEntityPool(gaboto, snapshot);
       establishParticipantUri(query);
-      try {
-        pool.addEntity(snapshot.loadEntity(query.getUri()));
-      } catch (ResourceDoesNotExistException e) {
-        throw new ResourceNotFoundException("Resource not found with uri " + query.getUri(), e);
-      }
+      pool.addEntity(snapshot.loadEntity(query.getUri()));
       output(pool, query, response);
       return;
     case TYPE_COLLECTION:
@@ -368,7 +363,11 @@ public class OxPointsQueryServlet extends HttpServlet {
     String vUri = v;
     if (!vUri.startsWith(config.getNSData()))
         vUri = config.getNSData() + v;
-    return snapshot.getResource(vUri);
+    try {
+      return snapshot.getResource(vUri);
+    } catch (ResourceDoesNotExistException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private boolean requiresResource(Property property) {
@@ -485,7 +484,7 @@ public class OxPointsQueryServlet extends HttpServlet {
       try {
         transformer = RDFPoolTransformerFactory.getRDFPoolTransformer(GabotoQuery.FORMAT_RDF_XML_ABBREV);
         output = transformer.transform(pool);
-      } catch (UnsupportedFormatException e) {
+      } catch (UnsupportedQueryFormatException e) {
         throw new IllegalArgumentException(e);
       }
       response.setContentType("text/xml");

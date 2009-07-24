@@ -63,7 +63,7 @@ import org.oucs.gaboto.model.ResourceDoesNotExistException;
 import org.oucs.gaboto.model.query.GabotoQuery;
 import org.oucs.gaboto.model.query.UnsupportedQueryFormatException;
 import org.oucs.gaboto.nodes.GabotoEntity;
-import org.oucs.gaboto.timedim.TimeInstant;
+import org.oucs.gaboto.time.TimeInstant;
 import org.oucs.gaboto.vocabulary.OxPointsVocab;
 
 import com.hp.hpl.jena.rdf.model.Property;

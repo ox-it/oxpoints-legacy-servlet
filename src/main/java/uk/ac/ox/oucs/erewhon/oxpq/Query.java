@@ -38,15 +38,15 @@ import java.util.TreeMap;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.oucs.gaboto.vocabulary.DC;
-import org.oucs.gaboto.vocabulary.GabotoKML;
-import org.oucs.gaboto.vocabulary.GabotoVocab;
-import org.oucs.gaboto.vocabulary.GeoVocab;
-import org.oucs.gaboto.vocabulary.OxPointsVocab;
-import org.oucs.gaboto.vocabulary.RDFCON;
-import org.oucs.gaboto.vocabulary.RDFG;
-import org.oucs.gaboto.vocabulary.TimeVocab;
-import org.oucs.gaboto.vocabulary.VCard;
+import net.sf.gaboto.vocabulary.DC;
+import net.sf.gaboto.vocabulary.GabotoKML;
+import net.sf.gaboto.vocabulary.GabotoVocab;
+import net.sf.gaboto.vocabulary.GeoVocab;
+import net.sf.gaboto.vocabulary.OxPointsVocab;
+import net.sf.gaboto.vocabulary.RDFCON;
+import net.sf.gaboto.vocabulary.RDFG;
+import net.sf.gaboto.vocabulary.TimeVocab;
+import net.sf.gaboto.vocabulary.VCard;
 
 import com.hp.hpl.jena.rdf.model.Property;
 

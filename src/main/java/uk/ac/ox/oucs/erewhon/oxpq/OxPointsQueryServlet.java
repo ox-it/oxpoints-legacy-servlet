@@ -50,8 +50,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.log4j.Logger;
 import org.oucs.gaboto.GabotoConfiguration;
 import org.oucs.gaboto.GabotoFactory;
-import org.oucs.gaboto.entities.pool.GabotoEntityPool;
-import org.oucs.gaboto.entities.pool.GabotoEntityPoolConfiguration;
 import org.oucs.gaboto.transformation.EntityPoolTransformer;
 import org.oucs.gaboto.transformation.GeoJSONPoolTransfomer;
 import org.oucs.gaboto.transformation.JSONPoolTransformer;
@@ -62,7 +60,9 @@ import org.oucs.gaboto.model.GabotoSnapshot;
 import org.oucs.gaboto.model.ResourceDoesNotExistException;
 import org.oucs.gaboto.model.query.GabotoQuery;
 import org.oucs.gaboto.model.query.UnsupportedQueryFormatException;
-import org.oucs.gaboto.nodes.GabotoEntity;
+import org.oucs.gaboto.node.GabotoEntity;
+import org.oucs.gaboto.node.pool.EntityPool;
+import org.oucs.gaboto.node.pool.EntityPoolConfiguration;
 import org.oucs.gaboto.time.TimeInstant;
 import org.oucs.gaboto.vocabulary.OxPointsVocab;
 
@@ -180,10 +180,10 @@ public class OxPointsQueryServlet extends HttpServlet {
       output(snapshot.getGaboto().getConfig().getGabotoOntologyLookup().getRegisteredEntityClassesAsClassNames(), query, response);
       return;
     case ALL:
-      output(GabotoEntityPool.createFrom(snapshot), query, response);
+      output(EntityPool.createFrom(snapshot), query, response);
       return;
     case INDIVIDUAL:
-      GabotoEntityPool pool = new GabotoEntityPool(gaboto, snapshot);
+      EntityPool pool = new EntityPool(gaboto, snapshot);
       establishParticipantUri(query);
       pool.addEntity(snapshot.loadEntity(query.getUri()));
       output(pool, query, response);
@@ -196,14 +196,14 @@ public class OxPointsQueryServlet extends HttpServlet {
               response);
       return;
     case PROPERTY_SUBJECT:
-      GabotoEntityPool subjectPool = null;
+      EntityPool subjectPool = null;
       if (requiresResource(query.getRequestedProperty())) {
         establishParticipantUri(query);
         if (query.getUri() == null)
           throw new ResourceNotFoundException("Resource not found with coding " + query.getParticipantCoding() + 
               " and value " + query.getParticipantCode());
         GabotoEntity object = snapshot.loadEntity(query.getUri());
-        GabotoEntityPool creationPool = GabotoEntityPool.createFrom(snapshot);
+        EntityPool creationPool = EntityPool.createFrom(snapshot);
         System.err.println("CreationPool size " + creationPool.size());
         object.setCreatedFromPool(creationPool);
         subjectPool = loadPoolWithActiveParticipants(object, query.getRequestedProperty()); 
@@ -219,12 +219,12 @@ public class OxPointsQueryServlet extends HttpServlet {
             " and value " + query.getParticipantCode());
       GabotoEntity subject = snapshot.loadEntity(query.getUri());
       
-      GabotoEntityPool objectPool = loadPoolWithPassiveParticipants(subject, query.getRequestedProperty());
+      EntityPool objectPool = loadPoolWithPassiveParticipants(subject, query.getRequestedProperty());
       output(objectPool, query, response);
       return;
     case NOT_FILTERED_TYPE_COLLECTION:
-      GabotoEntityPool p = loadPoolWithEntitiesOfType(query.getType());
-      GabotoEntityPool p2 = loadPoolWithEntitiesOfType(query.getType());
+      EntityPool p = loadPoolWithEntitiesOfType(query.getType());
+      EntityPool p2 = loadPoolWithEntitiesOfType(query.getType());
       for (GabotoEntity e : p.getEntities()) 
         if (e.getPropertyValue(query.getNotProperty(), false, false) != null)
           p2.removeEntity(e);
@@ -238,11 +238,11 @@ public class OxPointsQueryServlet extends HttpServlet {
 
   }
 
-  private GabotoEntityPool loadPoolWithEntitiesOfProperty(Property prop, String value) {
+  private EntityPool loadPoolWithEntitiesOfProperty(Property prop, String value) {
     System.err.println("loadPoolWithEntitiesOfProperty" + prop + ":" + value);
     if (prop == null)
       throw new NullPointerException();
-    GabotoEntityPool pool = null;
+    EntityPool pool = null;
     if (value == null) {
       pool = snapshot.loadEntitiesWithProperty(prop);
     } else {
@@ -261,10 +261,10 @@ public class OxPointsQueryServlet extends HttpServlet {
   }
   
   @SuppressWarnings("unchecked")
-  private GabotoEntityPool loadPoolWithActiveParticipants(GabotoEntity passiveParticipant, Property prop) { 
+  private EntityPool loadPoolWithActiveParticipants(GabotoEntity passiveParticipant, Property prop) { 
     if (prop == null)
       throw new NullPointerException();
-    GabotoEntityPool pool = new GabotoEntityPool(gaboto, snapshot);
+    EntityPool pool = new EntityPool(gaboto, snapshot);
     System.err.println("loadPoolWithActiveParticipants" + passiveParticipant.getUri() + "  prop " + prop + " which ");
     Set<Entry<String, Object>> passiveProperties = passiveParticipant.getAllPassiveProperties().entrySet(); 
     for (Entry<String, Object> entry : passiveProperties) {
@@ -300,7 +300,7 @@ public class OxPointsQueryServlet extends HttpServlet {
       Property coding = Query.getPropertyFromAbreviation(query.getParticipantCoding());
       System.err.println("establishUri" + query.getParticipantCode());
       
-      GabotoEntityPool objectPool = snapshot.loadEntitiesWithProperty(coding, query.getParticipantCode());
+      EntityPool objectPool = snapshot.loadEntitiesWithProperty(coding, query.getParticipantCode());
       boolean found = false;
       for (GabotoEntity objectKey: objectPool) { 
         if (found)
@@ -314,10 +314,10 @@ public class OxPointsQueryServlet extends HttpServlet {
           " and value " + query.getParticipantCode());
   }
   @SuppressWarnings("unchecked")
-  private GabotoEntityPool loadPoolWithPassiveParticipants(GabotoEntity activeParticipant, Property prop) { 
+  private EntityPool loadPoolWithPassiveParticipants(GabotoEntity activeParticipant, Property prop) { 
     if (prop == null)
       throw new NullPointerException();
-    GabotoEntityPool pool = new GabotoEntityPool(gaboto, snapshot);
+    EntityPool pool = new EntityPool(gaboto, snapshot);
     System.err.println("loadPoolWithPassiveParticipants" + activeParticipant.getUri() + "  prop " + prop + " which ");
     Set<Entry<String, Object>> directProperties = activeParticipant.getAllDirectProperties().entrySet(); 
     for (Entry<String, Object> entry : directProperties) {
@@ -345,7 +345,7 @@ public class OxPointsQueryServlet extends HttpServlet {
     return pool;
   }
 
-  private GabotoEntityPool becomeOrAdd(GabotoEntityPool pool, GabotoEntityPool poolToAdd) {
+  private EntityPool becomeOrAdd(EntityPool pool, EntityPool poolToAdd) {
     System.err.println("BecomeOrAdd" + pool);
     if (poolToAdd == null)
       throw new NullPointerException();
@@ -385,11 +385,11 @@ public class OxPointsQueryServlet extends HttpServlet {
     return false;
   }
 
-  private GabotoEntityPool loadPoolWithEntitiesOfType(String type) {
+  private EntityPool loadPoolWithEntitiesOfType(String type) {
     System.err.println("Type:" + type);
     String types[] = type.split("[|]");
 
-    GabotoEntityPoolConfiguration conf = new GabotoEntityPoolConfiguration(snapshot);
+    EntityPoolConfiguration conf = new EntityPoolConfiguration(snapshot);
     for (String t : types) {
       if (!snapshot.getGaboto().getConfig().getGabotoOntologyLookup().isValidName(t))
         throw new IllegalArgumentException("Found no URI matching type " + t);
@@ -397,7 +397,7 @@ public class OxPointsQueryServlet extends HttpServlet {
       conf.addAcceptedType(typeURI);
     }
 
-    return GabotoEntityPool.createFrom(conf);
+    return EntityPool.createFrom(conf);
   }
 
   private void output(Collection<String> them, Query query, HttpServletResponse response) {
@@ -448,7 +448,7 @@ public class OxPointsQueryServlet extends HttpServlet {
     }
   }
 
-  private void output(GabotoEntityPool pool, Query query, HttpServletResponse response) {
+  private void output(EntityPool pool, Query query, HttpServletResponse response) {
     System.err.println("Pool has " + pool.getSize() + " elements");
 
     String output = "";
@@ -514,7 +514,7 @@ public class OxPointsQueryServlet extends HttpServlet {
     }
   }
 
-  private String createKml(GabotoEntityPool pool, Query query) {
+  private String createKml(EntityPool pool, Query query) {
     String output;
     KMLPoolTransformer transformer = new KMLPoolTransformer();
     if (query.getArc() != null) {

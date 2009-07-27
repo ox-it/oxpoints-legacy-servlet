@@ -38,13 +38,13 @@ import java.util.TreeMap;
 
 import javax.servlet.http.HttpServletRequest;
 
-import net.sf.gaboto.vocabulary.DC;
-import net.sf.gaboto.vocabulary.GabotoKML;
+import net.sf.gaboto.vocabulary.DCVocab;
+import net.sf.gaboto.vocabulary.GabotoKMLVocab;
 import net.sf.gaboto.vocabulary.GabotoVocab;
 import net.sf.gaboto.vocabulary.GeoVocab;
 import net.sf.gaboto.vocabulary.OxPointsVocab;
-import net.sf.gaboto.vocabulary.RDFCON;
-import net.sf.gaboto.vocabulary.RDFG;
+import net.sf.gaboto.vocabulary.RDFContext;
+import net.sf.gaboto.vocabulary.RDFGraph;
 import net.sf.gaboto.vocabulary.TimeVocab;
 import net.sf.gaboto.vocabulary.VCard;
 
@@ -92,7 +92,7 @@ public final class Query {
   {
     // HACK the ordering so that oxpoints#subsetOf is prioritised over DC#subsetOf
     namespacePrefixes.put("1oxp:",   OxPointsVocab.NS);
-    namespacePrefixes.put("2dc:",    DC.NS);
+    namespacePrefixes.put("2dc:",    DCVocab.NS);
     namespacePrefixes.put("3vCard:", VCard.NS);
     namespacePrefixes.put("4geo:",   GeoVocab.NS);
   }
@@ -418,15 +418,15 @@ public final class Query {
       return true;
     if (GabotoVocab.MODEL.getOntClass(className) != null)
       return true;
-    if (GabotoKML.MODEL.getOntClass(className) != null)
+    if (GabotoKMLVocab.MODEL.getOntClass(className) != null)
       return true;
     if (GeoVocab.MODEL.getOntClass(className) != null)
       return true;
-    if (DC.MODEL.getOntClass(className) != null)
+    if (DCVocab.MODEL.getOntClass(className) != null)
       return true;
-    if (RDFCON.MODEL.getOntClass(className) != null)
+    if (RDFContext.MODEL.getOntClass(className) != null)
       return true;
-    if (RDFG.MODEL.getOntClass(className) != null)
+    if (RDFGraph.MODEL.getOntClass(className) != null)
       return true;
     if (TimeVocab.MODEL.getOntClass(className) != null)
       return true;
@@ -440,16 +440,16 @@ public final class Query {
       return VCard.MODEL.getObjectProperty(pName);    
     if (GabotoVocab.MODEL.getObjectProperty(pName) != null)
       return GabotoVocab.MODEL.getObjectProperty(pName);
-    if (GabotoKML.MODEL.getObjectProperty(pName) != null)
-      return GabotoKML.MODEL.getObjectProperty(pName);    
+    if (GabotoKMLVocab.MODEL.getObjectProperty(pName) != null)
+      return GabotoKMLVocab.MODEL.getObjectProperty(pName);    
     if (GeoVocab.MODEL.getObjectProperty(pName) != null)
       return GeoVocab.MODEL.getObjectProperty(pName);    
-    if (DC.MODEL.getObjectProperty(pName) != null)
-      return DC.MODEL.getObjectProperty(pName);    
-    if (RDFCON.MODEL.getObjectProperty(pName) != null)
-      return RDFCON.MODEL.getObjectProperty(pName);    
-    if (RDFG.MODEL.getObjectProperty(pName) != null)
-      return RDFG.MODEL.getObjectProperty(pName);    
+    if (DCVocab.MODEL.getObjectProperty(pName) != null)
+      return DCVocab.MODEL.getObjectProperty(pName);    
+    if (RDFContext.MODEL.getObjectProperty(pName) != null)
+      return RDFContext.MODEL.getObjectProperty(pName);    
+    if (RDFGraph.MODEL.getObjectProperty(pName) != null)
+      return RDFGraph.MODEL.getObjectProperty(pName);    
     if (TimeVocab.MODEL.getObjectProperty(pName) != null)
       return TimeVocab.MODEL.getObjectProperty(pName);    
 
@@ -459,16 +459,16 @@ public final class Query {
       return VCard.MODEL.getAnnotationProperty(pName);    
     if (GabotoVocab.MODEL.getAnnotationProperty(pName) != null)
       return GabotoVocab.MODEL.getAnnotationProperty(pName);
-    if (GabotoKML.MODEL.getAnnotationProperty(pName) != null)
-      return GabotoKML.MODEL.getAnnotationProperty(pName);    
+    if (GabotoKMLVocab.MODEL.getAnnotationProperty(pName) != null)
+      return GabotoKMLVocab.MODEL.getAnnotationProperty(pName);    
     if (GeoVocab.MODEL.getAnnotationProperty(pName) != null)
       return GeoVocab.MODEL.getAnnotationProperty(pName);    
-    if (DC.MODEL.getAnnotationProperty(pName) != null)
-      return DC.MODEL.getAnnotationProperty(pName);    
-    if (RDFCON.MODEL.getAnnotationProperty(pName) != null)
-      return RDFCON.MODEL.getAnnotationProperty(pName);    
-    if (RDFG.MODEL.getAnnotationProperty(pName) != null)
-      return RDFG.MODEL.getAnnotationProperty(pName);    
+    if (DCVocab.MODEL.getAnnotationProperty(pName) != null)
+      return DCVocab.MODEL.getAnnotationProperty(pName);    
+    if (RDFContext.MODEL.getAnnotationProperty(pName) != null)
+      return RDFContext.MODEL.getAnnotationProperty(pName);    
+    if (RDFGraph.MODEL.getAnnotationProperty(pName) != null)
+      return RDFGraph.MODEL.getAnnotationProperty(pName);    
     if (TimeVocab.MODEL.getAnnotationProperty(pName) != null)
       return TimeVocab.MODEL.getAnnotationProperty(pName);    
     return null;

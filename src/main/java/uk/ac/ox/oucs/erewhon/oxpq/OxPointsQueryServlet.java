@@ -47,6 +47,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import net.sf.gaboto.EntityDoesNotExistException;
 import net.sf.gaboto.Gaboto;
 import net.sf.gaboto.GabotoConfiguration;
 import net.sf.gaboto.GabotoFactory;
@@ -116,12 +117,19 @@ public class OxPointsQueryServlet extends HttpServlet {
   }
 
   /**
+   * 
    */
   @Override
   public void doGet(HttpServletRequest request, HttpServletResponse response) {
     try {
       outputPool(request, response);
     } catch (ResourceNotFoundException e) {
+      try {
+        response.sendError(404, e.getMessage());
+      } catch (IOException e1) {
+        error(request, response, new AnticipatedException("Problem reporting error: " + e.getMessage(),e1));
+      }
+    } catch (EntityDoesNotExistException e) {
       try {
         response.sendError(404, e.getMessage());
       } catch (IOException e1) {

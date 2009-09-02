@@ -104,7 +104,6 @@ public class OxPointsQueryServlet extends HttpServlet {
     logger.debug("init");
     config = GabotoConfiguration.fromConfigFile();
 
-    GabotoFactory.init(config);
     gaboto = GabotoFactory.getEmptyInMemoryGaboto();
 
     gaboto.read(getResourceOrDie("graphs.rdf"), getResourceOrDie("cdg.rdf"));

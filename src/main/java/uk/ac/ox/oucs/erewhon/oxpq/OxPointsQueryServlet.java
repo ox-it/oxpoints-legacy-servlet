@@ -120,6 +120,7 @@ public class OxPointsQueryServlet extends HttpServlet {
    */
   @Override
   public void doGet(HttpServletRequest request, HttpServletResponse response) {
+    response.setCharacterEncoding("UTF-8");
     try {
       outputPool(request, response);
     } catch (ResourceNotFoundException e) {
@@ -495,7 +496,7 @@ public class OxPointsQueryServlet extends HttpServlet {
       } catch (UnsupportedQueryFormatException e) {
         throw new IllegalArgumentException(e);
       }
-      response.setContentType("text/xml");
+      response.setContentType("application/rdf+xml");
     } else if (query.getFormat().equals("txt")) {
       try { 
         for (GabotoEntity entity: pool.getEntities()) { 

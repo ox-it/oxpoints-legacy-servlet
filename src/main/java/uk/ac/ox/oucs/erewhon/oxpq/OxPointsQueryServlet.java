@@ -99,6 +99,8 @@ public class OxPointsQueryServlet extends HttpServlet {
   private static GabotoConfiguration config;
 
   private static Calendar startTime;
+  
+  private static String gpsbabelVersion = null;
 
   public void init() {
     logger.debug("init");
@@ -623,6 +625,68 @@ public class OxPointsQueryServlet extends HttpServlet {
       process.destroy();
     }
     return output;
+  }
+  
+  public static String getGPSBabelVersion() {
+    if (gpsbabelVersion != null ) 
+      return gpsbabelVersion;
+
+    // '/usr/bin/gpsbabel -V
+    OutputStream stdin = null;
+    InputStream stderr = null;
+    InputStream stdout = null;
+
+    String output = "";
+    String command = "/usr/bin/gpsbabel -V";
+    System.err.println("GPSBabel command:" + command);
+    Process process;
+    try {
+      process = Runtime.getRuntime().exec(command, null, null);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    try {
+      stdin = process.getOutputStream();
+
+      stdout = process.getInputStream();
+      stderr = process.getErrorStream();
+      stdin.flush();
+      stdin.close();
+
+      BufferedReader brCleanUp = new BufferedReader(new InputStreamReader(stdout));
+      String line;
+      try {
+        while ((line = brCleanUp.readLine()) != null) {
+          System.out.println("[Stdout] " + line);
+          output += line;
+        }
+        brCleanUp.close();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+
+      // clean up if any output in stderr
+      brCleanUp = new BufferedReader(new InputStreamReader(stderr));
+      String stderrString = "";
+      try {
+        while ((line = brCleanUp.readLine()) != null) {
+          System.err.println("[Stderr] " + line);
+          stderrString += line;
+        }
+        brCleanUp.close();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+      if (!stderrString.equals(""))
+        throw new RuntimeException("Command " + command + " gave error:\n" + stderrString);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    } finally {
+      process.destroy();
+    }
+    //GPSBabel Version 1.3.6
+    gpsbabelVersion =  output.substring("GPSBabel Version ".length());
+    return gpsbabelVersion;
   }
 
   private InputStream getResourceOrDie(String fileName) {

@@ -34,7 +34,7 @@
 
  <ciManagement>
   <system>Hudson</system>
-  <url>http://oucs-timp.oucs.ox.ac.uk:8080/hudson/job/${pom.artifactId}/</url>
+  <url>https://m.ox.ac.uk:444/job/${pom.artifactId}/</url>
  </ciManagement>
 
  <dependencies>

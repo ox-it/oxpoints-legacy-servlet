@@ -8,6 +8,7 @@
 
   <body>
     <links>
+      <item name="Hudson"            href="https://m.ox.ac.uk:444/" />
       <item name="Repository"        href="../maven2/"/>
     </links>
     <menu name="Erewhon">

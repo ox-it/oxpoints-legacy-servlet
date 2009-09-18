@@ -11,7 +11,7 @@
     <servlet-name>OxPointsQueryServlet</servlet-name>
     <servlet-class>uk.ac.ox.oucs.erewhon.oxpq.OxPointsQueryServlet</servlet-class>
   </servlet>
-
+  
   <servlet-mapping>
     <servlet-name>OxPointsQueryServlet</servlet-name>
     <url-pattern>/OxPQ</url-pattern>
@@ -19,6 +19,20 @@
   <servlet-mapping>
     <servlet-name>OxPointsQueryServlet</servlet-name>
     <url-pattern>/OxPQ/*</url-pattern>
+  </servlet-mapping>
+  
+  <servlet>
+    <servlet-name>OxPointsEditorServlet</servlet-name>
+    <servlet-class>uk.ac.ox.oucs.erewhon.oxpq.OxPointsEditorServlet</servlet-class>
+  </servlet>
+  
+  <servlet-mapping>
+    <servlet-name>OxPointsEditorServlet</servlet-name>
+    <url-pattern>/OxPE</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>OxPointsEditorServlet</servlet-name>
+    <url-pattern>/OxPE/*</url-pattern>
   </servlet-mapping>
   
 </web-app>

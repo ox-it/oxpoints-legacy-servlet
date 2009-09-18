@@ -36,37 +36,27 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.PrintWriter;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Map.Entry;
 
-import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import net.sf.gaboto.EntityDoesNotExistException;
-import net.sf.gaboto.Gaboto;
-import net.sf.gaboto.GabotoConfiguration;
-import net.sf.gaboto.GabotoFactory;
-import net.sf.gaboto.GabotoSnapshot;
 import net.sf.gaboto.ResourceDoesNotExistException;
 import net.sf.gaboto.node.GabotoEntity;
 import net.sf.gaboto.node.pool.EntityPool;
 import net.sf.gaboto.node.pool.EntityPoolConfiguration;
 import net.sf.gaboto.query.GabotoQuery;
 import net.sf.gaboto.query.UnsupportedQueryFormatException;
-import net.sf.gaboto.time.TimeInstant;
 import net.sf.gaboto.transformation.EntityPoolTransformer;
 import net.sf.gaboto.transformation.GeoJSONPoolTransfomer;
 import net.sf.gaboto.transformation.JSONPoolTransformer;
 import net.sf.gaboto.transformation.KMLPoolTransformer;
 import net.sf.gaboto.transformation.RDFPoolTransformerFactory;
 import net.sf.gaboto.vocabulary.OxPointsVocab;
-
-import org.apache.log4j.Logger;
 
 import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.Resource;
@@ -87,39 +77,16 @@ import com.hp.hpl.jena.rdf.model.Resource;
  * 
  */
 
-public class OxPointsQueryServlet extends HttpServlet {
+public class OxPointsQueryServlet extends OxPointsServlet {
 
   private static final long serialVersionUID = 4155078999145248554L;
-  private static Logger logger = Logger.getLogger(OxPointsQueryServlet.class.getName());
 
-  private static Gaboto gaboto;
-
-  private static GabotoSnapshot snapshot;
-
-  private static GabotoConfiguration config;
-
-  private static Calendar startTime;
-  
   private static String gpsbabelVersion = null;
 
   public void init() {
-    logger.debug("init");
-    config = GabotoConfiguration.fromConfigFile();
-
-    gaboto = GabotoFactory.getEmptyInMemoryGaboto();
-
-    gaboto.read(getResourceOrDie("graphs.rdf"), getResourceOrDie("cdg.rdf"));
-    gaboto.recreateTimeDimensionIndex();
-
-    startTime = Calendar.getInstance();
-
-    snapshot = gaboto.getSnapshot(TimeInstant.from(startTime));
-
+    super.init();
   }
-
-  /**
-   * 
-   */
+  
   @Override
   public void doGet(HttpServletRequest request, HttpServletResponse response) {
     response.setCharacterEncoding("UTF-8");
@@ -140,41 +107,6 @@ public class OxPointsQueryServlet extends HttpServlet {
     } catch (AnticipatedException e) {
       error(request, response, e);
     }
-  }
-
-  void error(HttpServletRequest request, HttpServletResponse response, AnticipatedException exception) {
-    response.setContentType("text/html");
-    PrintWriter out = null;
-    try {
-      out = response.getWriter();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-    out.println("<html><head><title>OxPoints Anticipated Error</title></head>");
-    out.println("<body>");
-    out.println("<h2>OxPoints Anticipated Error</h2>");
-    out.println("<h3>" + exception.getMessage() + "</h3>");
-    out.println("<p>An anticipated error has occured in the application");
-    out.println("that runs this website, please contact <a href='mailto:");
-    out.println(getSysAdminEmail() + "'>" + getSysAdminName() + "</a>");
-    out.println(", with the information given below.</p>");
-    out.println("<h3> Invoked with " + request.getRequestURL().toString() + "</h3>");
-    if (request.getQueryString() != null)
-      out.println("<h3> query " + request.getQueryString() + "</h3>");
-    out.println("<h4><font color='red'><pre>");
-    exception.printStackTrace(out);
-    out.println("</pre></font></h4>");
-    out.println("</body></html>");
-
-  }
-
-  private String getSysAdminEmail() {
-    return "Tim.Pizey@oucs.ox.ac.uk";
-
-  }
-
-  private String getSysAdminName() {
-    return "Tim Pizey";
   }
 
   void outputPool(HttpServletRequest request, HttpServletResponse response) throws ResourceNotFoundException {
@@ -687,14 +619,6 @@ public class OxPointsQueryServlet extends HttpServlet {
     //GPSBabel Version 1.3.6
     gpsbabelVersion =  output.substring("GPSBabel Version ".length());
     return gpsbabelVersion;
-  }
-
-  private InputStream getResourceOrDie(String fileName) {
-    String resourceName = fileName;
-    InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream(resourceName);
-    if (is == null)
-      throw new NullPointerException("File " + resourceName + " cannot be loaded");
-    return is;
   }
 
 }

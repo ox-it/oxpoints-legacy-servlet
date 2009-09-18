@@ -32,9 +32,7 @@ public abstract class OxPointsServlet extends HttpServlet {
     System.err.println("init");
     config = GabotoConfiguration.fromConfigFile();
   
-    gaboto = GabotoFactory.getEmptyInMemoryGaboto();
-  
-    gaboto.read(GabotoAccess.getResourceOrDie("graphs.rdf"), GabotoAccess.getResourceOrDie("cdg.rdf"));
+    gaboto = GabotoFactory.readPersistedGaboto(GabotoAccess.getResourceOrDie("graphs.rdf"), GabotoAccess.getResourceOrDie("cdg.rdf"));
     gaboto.recreateTimeDimensionIndex();
   
     startTime = Calendar.getInstance();

@@ -320,7 +320,7 @@
 
 
   <repositories>
-<!--
+    <!-- Houses ng4j -->
     <repository>
       <releases />
       <snapshots>
@@ -331,6 +331,7 @@
       <url>http://melati.org/maven2/</url>
     </repository>
 
+    <!-- Houses gaboto -->
     <repository>
       <releases />
       <snapshots>
@@ -340,7 +341,7 @@
       <name>bogof</name>
       <url>http://bogof.nsms.ox.ac.uk/mvn/maven2/</url>
     </repository>
--->
+
   </repositories>
 
 </project>

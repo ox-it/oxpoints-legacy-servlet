@@ -96,13 +96,13 @@ public class OxPointsQueryServlet extends OxPointsServlet {
       try {
         response.sendError(404, e.getMessage());
       } catch (IOException e1) {
-        error(request, response, new AnticipatedException("Problem reporting error: " + e.getMessage(),e1));
+        error(request, response, new AnticipatedException("Problem reporting error: " + e.getMessage(), e1, 500));
       }
     } catch (EntityDoesNotExistException e) {
       try {
         response.sendError(404, e.getMessage());
       } catch (IOException e1) {
-        error(request, response, new AnticipatedException("Problem reporting error: " + e.getMessage(),e1));
+        error(request, response, new AnticipatedException("Problem reporting error: " + e.getMessage(),e1, 500));
       }
     } catch (AnticipatedException e) {
       error(request, response, e);
@@ -385,7 +385,7 @@ public class OxPointsQueryServlet extends OxPointsServlet {
         response.getWriter().write("</c>");
         response.getWriter().write("\n");
       } else
-        throw new AnticipatedException("Unexpected format " + query.getFormat());
+        throw new AnticipatedException("Unexpected format " + query.getFormat(), 400);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

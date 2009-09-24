@@ -43,6 +43,7 @@ public abstract class OxPointsServlet extends HttpServlet {
 
   protected void error(HttpServletRequest request, HttpServletResponse response, AnticipatedException exception) {
     response.setContentType("text/html");
+    response.setStatus(exception.getHttpStatusCode());
     PrintWriter out = null;
     try {
       out = response.getWriter();

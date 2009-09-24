@@ -44,22 +44,27 @@ public class AnticipatedException extends RuntimeException {
 
   private static final long serialVersionUID = 2364574116355169617L;
 
+  private int httpStatusCode;
   /**
    * Constructor.
    * @param message
    * @param cause
    */
-  public AnticipatedException(String message, Throwable cause) {
+  public AnticipatedException(String message, Throwable cause, int httpStatusCode) {
     super(message, cause);
+    this.httpStatusCode = httpStatusCode; 
   }
 
   /**
    * Constructor.
    * @param message
    */
-  public AnticipatedException(String message) {
+  public AnticipatedException(String message, int httpStatusCode) {
     super(message);
+    this.httpStatusCode = httpStatusCode; 
   }
 
-
+  public int getHttpStatusCode() { 
+    return httpStatusCode;
+  }
 }

@@ -116,7 +116,7 @@ public final class Query {
 
     String pathInfo = request.getPathInfo();
     if (pathInfo == null) 
-      throw new AnticipatedException("Expected path info");
+      throw new AnticipatedException("Expected path info", 400  );
     int dotPosition = pathInfo.lastIndexOf('.');
     System.err.println(pathInfo);
     String resultsetSpec;
@@ -150,7 +150,7 @@ public final class Query {
       q.requestedProperty = getPropertyFromAbreviation(q.requestedPropertyName);
       q.returnType = ReturnType.PROPERTY_ANY;
     } else
-      throw new AnticipatedException("Unexpected path info " + pathInfo);
+      throw new AnticipatedException("Unexpected path info " + pathInfo, 400);
     
     Enumeration<String> en = request.getParameterNames();
     while (en.hasMoreElements()) {
@@ -163,16 +163,16 @@ public final class Query {
         if (q.arcProperty != null)
           q.arc = pValue;
         else 
-          throw new AnticipatedException("Unrecognised arc property name " + pValue);
+          throw new AnticipatedException("Unrecognised arc property name " + pValue, 400);
       } else if (pName.equals("not")) {
         q.returnType = ReturnType.NOT_FILTERED_TYPE_COLLECTION;
         q.notProperty = getPropertyFromAbreviation(pValue);
         if (q.notProperty == null)
-          throw new AnticipatedException("Unrecognised not property name " + pValue);
+          throw new AnticipatedException("Unrecognised not property name " + pValue, 400);
       } else if (pName.equals("folderType")) { 
         q.folderClassURI = getValidClassURI(pValue);
         if (q.folderClassURI == null)
-          throw new AnticipatedException("Unrecognised folder type " + pValue);
+          throw new AnticipatedException("Unrecognised folder type " + pValue, 400);
       } /*
       else if (pName.equals("property")) {
         q.requestedProperty = getPropertyFromAbreviation(pValue);
@@ -190,7 +190,7 @@ public final class Query {
         if (q.orderByProperty != null)
           q.orderBy = pValue;
         else 
-          throw new AnticipatedException("Unrecognised orderBy property name " + pValue);
+          throw new AnticipatedException("Unrecognised orderBy property name " + pValue, 400);
       }
       else if (pName.equals("jsCallback"))
         q.jsCallback = pValue;
@@ -205,7 +205,7 @@ public final class Query {
           throw new IllegalArgumentException(e);
         }
       } else throw new AnticipatedException(
-          "Unrecognised parameter " + pName + ":" + request.getParameter(pName));
+          "Unrecognised parameter " + pName + ":" + request.getParameter(pName), 400);
     }
     return q;
   }
@@ -504,7 +504,7 @@ public final class Query {
     try { 
       new Integer(participantId); 
     } catch (NumberFormatException e){
-      throw new AnticipatedException("Invalid id " + participantId);
+      throw new AnticipatedException("Invalid id " + participantId, 400);
     }
     this.participantId = participantId;
   }

@@ -31,7 +31,9 @@
  */
 package uk.ac.ox.oucs.erewhon.oxpq;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -69,24 +71,26 @@ public class OxPointsEditorServlet extends OxPointsServlet  {
   @Override
   protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
     System.err.println("doPost");
-    /*
-    BufferedReader is = new BufferedReader(new InputStreamReader(req.getInputStream()));
+    
+    Gaboto t = GabotoFactory.getEmptyInMemoryGaboto();
+    System.err.println("Entities:" + gaboto.getJenaModelViewOnNamedGraphSet().size());
+    String id = gaboto.generateIdUri(); 
+    System.err.println("We have " + gaboto.getJenaModelViewOnNamedGraphSet().size() +  " known entities before read");
+    BufferedReader is = new BufferedReader(new InputStreamReader(request.getInputStream()));
     String line;
     String lines = "";
     while ((line = is.readLine()) != null) {
       System.out.println(line);
       lines += line;
-    }*/
-    
-    Gaboto t = GabotoFactory.getEmptyInMemoryGaboto();
-    if (request.getParameter("rdf") != null)   {
-      String rdf = request.getParameter("rdf");
-    } else  {
-      t.read(request.getInputStream());
-      //for (Statement s in t.getSnapshot(t.getConfig().getContextDependantGraphURI()).getModel().listStatements() )
-    }   
+      lines += " ";
+    }
+    System.err.println("Lines:" + lines + ":");
+    gaboto.read(lines);
+    System.err.println("We have " + gaboto.getJenaModelViewOnNamedGraphSet().size() +  " known entities after read");
+    //for (Statement s in t.getSnapshot(t.getConfig().getContextDependantGraphURI()).getModel().listStatements() )
     response.setStatus(201);
-    response.setHeader("Location", "http://pizey.net/~timp/index.html");
+    System.err.println("servletURL:" + servletURL(request) + "/id/" + gaboto.getCurrentHighestId());
+    response.setHeader("Location", servletURL(request) + "/id/" + gaboto.getCurrentHighestId());
   }
   
 }

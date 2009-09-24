@@ -119,6 +119,13 @@ public class OxPointsQueryServlet extends OxPointsServlet {
         throw new RuntimeException(e);
       }
       return;
+    case META_NEXT_ID:
+      try {
+        response.getWriter().write(new Long(snapshot.getGaboto().getCurrentHighestId() + 1).toString());
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+      return;
     case META_TYPES:
       output(snapshot.getGaboto().getConfig().getGabotoOntologyLookup().getRegisteredEntityClassesAsClassNames(), query, response);
       return;

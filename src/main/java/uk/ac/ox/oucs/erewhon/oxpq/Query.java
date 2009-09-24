@@ -79,7 +79,7 @@ public final class Query {
   private boolean needsCodeLookup;
   
   public enum ReturnType {
-    META_TIMESTAMP, META_TYPES, ALL, TYPE_COLLECTION, 
+    META_TIMESTAMP, META_TYPES, META_NEXT_ID, ALL, TYPE_COLLECTION, 
     INDIVIDUAL, 
     NOT_FILTERED_TYPE_COLLECTION,
     PROPERTY_ANY, 
@@ -131,6 +131,8 @@ public final class Query {
       q.returnType = ReturnType.META_TIMESTAMP;
     } else if (resultsetSpec.startsWith("/types") || resultsetSpec.startsWith("/classes")) {
       q.returnType = ReturnType.META_TYPES;
+    } else if (resultsetSpec.startsWith("/next")) {
+      q.returnType = ReturnType.META_NEXT_ID;
     } else if (resultsetSpec.startsWith("/all")) {
       q.returnType = ReturnType.ALL;
     } else if (resultsetSpec.startsWith("/id/")) {

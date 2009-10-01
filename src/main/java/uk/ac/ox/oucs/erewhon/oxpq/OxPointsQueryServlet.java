@@ -37,6 +37,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.Collection;
+import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Map.Entry;
@@ -89,9 +90,17 @@ public class OxPointsQueryServlet extends OxPointsServlet {
   
   @Override
   public void doGet(HttpServletRequest request, HttpServletResponse response) {
+    System.err.println("Still here");
+    Enumeration<String> them = getServletConfig().getInitParameterNames();
+    while (them.hasMoreElements())
+      System.err.println(them.nextElement());
+    
     response.setCharacterEncoding("UTF-8");
     try {
+      System.err.println("about to estblish outputPool");
       outputPool(request, response);
+      
+      System.err.println("No Error here");
     } catch (ResourceNotFoundException e) {
       try {
         response.sendError(404, e.getMessage());
@@ -133,10 +142,16 @@ public class OxPointsQueryServlet extends OxPointsServlet {
       output(EntityPool.createFrom(snapshot), query, response);
       return;
     case INDIVIDUAL:
+      System.err.println("Still here1");
       EntityPool pool = new EntityPool(gaboto, snapshot);
+      System.err.println("Still here2");
       establishParticipantUri(query);
+      System.err.println("Still here3");
+      System.err.println("We have " + snapshot.size() + " entities in snapshot before loadEntity");
       pool.addEntity(snapshot.loadEntity(query.getUri()));
+      System.err.println("Still here4");
       output(pool, query, response);
+      System.err.println("Still here5");
       return;
     case TYPE_COLLECTION:
       output(loadPoolWithEntitiesOfType(query.getType()), query, response);

@@ -3,6 +3,7 @@ package uk.ac.ox.oucs.erewhon.oxpq;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Calendar;
+import java.util.Enumeration;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -23,29 +24,39 @@ public abstract class OxPointsServlet extends HttpServlet {
   protected static GabotoSnapshot snapshot = null;
   protected static GabotoConfiguration config = null;
   protected static Calendar startTime = null;
-
+  protected static String dataDirectory = null; 
+  
   public OxPointsServlet() {
     super();
+    
+    System.err.println("Constuctor called"+this.toString());
   }
 
   public void init() {
-    System.err.println("init");
-    if (startTime == null) { 
-      config = GabotoConfiguration.fromConfigFile();
-  
-      gaboto = GabotoFactory.readPersistedGaboto(GabotoAccess.getResourceOrDie(Gaboto.GRAPH_FILE_NAME), GabotoAccess.getResourceOrDie(Gaboto.CDG_FILE_NAME));
-      gaboto.recreateTimeDimensionIndex();
-  
-      startTime = Calendar.getInstance();
-  
-      snapshot = gaboto.getSnapshot(TimeInstant.from(startTime));
-    }
-  
+    config = GabotoConfiguration.fromConfigFile();
+    dataDirectory = getDataDirectory(); 
+    System.err.println("Reading from " + dataDirectory);
+    gaboto = GabotoFactory.readPersistedGaboto(dataDirectory);
+    gaboto.recreateTimeDimensionIndex();
+    startTime = Calendar.getInstance();
+    snapshot = gaboto.getSnapshot(TimeInstant.from(startTime));
   }
-
+  
+  private String getDataDirectory() {
+    String initParam = getServletConfig().getInitParameter("dataDirectory");
+    System.err.println("initParam in OxPointsServlet " + initParam);
+    
+    Enumeration<String> them = getServletConfig().getInitParameterNames();
+    while (them.hasMoreElements())
+      System.err.println(them.nextElement());
+    System.err.println(getServletConfig());
+    
+    return initParam == null ? config.getDataDirectory() : initParam;
+  }
+  
   /**
    * I am not that happy with this. 
-   * The whole pessage page is written to th log file, but hey, it is no worse than printing a stack trace. 
+   * The whole message page is written to the log file, but hey, it is no worse than printing a stack trace. 
    * 
    */
   protected void error(HttpServletRequest request, HttpServletResponse response, AnticipatedException exception) {

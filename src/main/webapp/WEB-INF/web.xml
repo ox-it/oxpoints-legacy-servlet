@@ -5,13 +5,11 @@
   <session-config>
         <session-timeout>120</session-timeout>
   </session-config>
-  
-    
+
   <servlet>
     <servlet-name>OxPointsQueryServlet</servlet-name>
     <servlet-class>uk.ac.ox.oucs.erewhon.oxpq.OxPointsQueryServlet</servlet-class>
   </servlet>
-  
   <servlet-mapping>
     <servlet-name>OxPointsQueryServlet</servlet-name>
     <url-pattern>/OxPQ</url-pattern>
@@ -20,7 +18,25 @@
     <servlet-name>OxPointsQueryServlet</servlet-name>
     <url-pattern>/OxPQ/*</url-pattern>
   </servlet-mapping>
-  
+
+  <servlet>
+    <servlet-name>OxPointsQueryTestServlet</servlet-name>
+    <servlet-class>uk.ac.ox.oucs.erewhon.oxpq.OxPointsQueryServlet</servlet-class>
+    <init-param>
+     <param-name>dataDirectory</param-name>
+     <param-value>/dist/oxpq/src/test/resources/oxpoints</param-value>
+    </init-param>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>OxPointsQueryTestServlet</servlet-name>
+    <url-pattern>/Test</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>OxPointsQueryTestServlet</servlet-name>
+    <url-pattern>/Test/*</url-pattern>
+  </servlet-mapping>
+
+
   <servlet>
     <servlet-name>OxPointsEditorServlet</servlet-name>
     <servlet-class>uk.ac.ox.oucs.erewhon.oxpq.OxPointsEditorServlet</servlet-class>

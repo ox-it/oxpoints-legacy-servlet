@@ -39,8 +39,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import net.sf.gaboto.Gaboto;
-import net.sf.gaboto.GabotoFactory;
 
 public class OxPointsEditorServlet extends OxPointsServlet  {
 
@@ -59,7 +57,7 @@ public class OxPointsEditorServlet extends OxPointsServlet  {
    */
   @Override
   protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-    System.err.println("doGet");
+    System.err.println("doGet - redirecting");
     new OxPointsQueryServlet().doGet(request,response);
   }
 
@@ -72,7 +70,7 @@ public class OxPointsEditorServlet extends OxPointsServlet  {
   protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
     System.err.println("doPost");
     
-    Gaboto t = GabotoFactory.getEmptyInMemoryGaboto();
+    //Gaboto t = GabotoFactory.getEmptyInMemoryGaboto();
     System.err.println("Entities:" + gaboto.getJenaModelViewOnNamedGraphSet().size());
     String id = gaboto.generateIdUri(); 
     System.err.println("We have " + gaboto.getJenaModelViewOnNamedGraphSet().size() +  " known entities before read");
@@ -80,17 +78,35 @@ public class OxPointsEditorServlet extends OxPointsServlet  {
     String line;
     String lines = "";
     while ((line = is.readLine()) != null) {
-      System.out.println(line);
       lines += line;
       lines += " ";
     }
     System.err.println("Lines:" + lines + ":");
+    System.err.println("We have " + snapshot.size() + " entities in snapshot before read");
     gaboto.read(lines);
+    System.err.println("We have " + gaboto.getJenaModelViewOnNamedGraphSet().size() +  " entities after read");    
+    System.err.println("We have " + snapshot.size() + " entities in snapshot after read");
+    
+    gaboto.recreateTimeDimensionIndex();
+    System.err.println("We have " + snapshot.size() + " entities in snapshot after index recreation");
+    snapshot = gaboto.getSnapshot();
+    System.err.println("We have " + snapshot.size() + " entities in snapshot after refresh");
     System.err.println("We have " + gaboto.getJenaModelViewOnNamedGraphSet().size() +  " known entities after read");
     //for (Statement s in t.getSnapshot(t.getConfig().getContextDependantGraphURI()).getModel().listStatements() )
     response.setStatus(201);
-    System.err.println("servletURL:" + servletURL(request) + "/id/" + gaboto.getCurrentHighestId());
-    response.setHeader("Location", servletURL(request) + "/id/" + gaboto.getCurrentHighestId());
+    String successUrl = servletURL(request, "OxPQ") + "/id/44443610";// + gaboto.getCurrentHighestId();
+    System.err.println("servletURL:" + successUrl);
+    response.setHeader("Location", successUrl);
+  }
+
+
+
+  /**
+   * @see javax.servlet.http.HttpServlet#doPut(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
+   */
+  @Override
+  protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    doPost(req, resp);
   }
   
 }

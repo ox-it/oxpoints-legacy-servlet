@@ -2,7 +2,7 @@
 <classpath>
 	<classpathentry including="**/*.java" kind="src" output="target/test-classes" path="src/test/java"/>
 	<classpathentry kind="src" path="src/main/java"/>
-	<classpathentry excluding="**/*.java" including="**/*.rdf" kind="src" path="resources"/>
+	<classpathentry including="**/*.*" kind="src" path="resources"/>
 	<classpathentry kind="var" path="M2_REPO/javax/servlet/servlet-api/2.4/servlet-api-2.4.jar" sourcepath="M2_REPO/javax/servlet/servlet-api/2.4/servlet-api-2.4-sources.jar"/>
 	<classpathentry kind="var" path="M2_REPO/ant/ant/1.6.5/ant-1.6.5.jar" sourcepath="M2_REPO/ant/ant/1.6.5/ant-1.6.5-sources.jar"/>
 	<classpathentry kind="var" path="M2_REPO/antlr/antlr/2.7.7/antlr-2.7.7.jar"/>
@@ -27,22 +27,22 @@
 			<attribute name="javadoc_location" value="jar:file:/home/timp/.m2/repository/commons-beanutils/commons-beanutils/1.7.0/commons-beanutils-1.7.0-javadoc.jar!/"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="var" path="M2_REPO/commons-codec/commons-codec/1.3/commons-codec-1.3.jar" sourcepath="M2_REPO/commons-codec/commons-codec/1.3/commons-codec-1.3-sources.jar">
+	<classpathentry kind="var" path="M2_REPO/commons-codec/commons-codec/1.2/commons-codec-1.2.jar">
 		<attributes>
-			<attribute name="javadoc_location" value="jar:file:/home/timp/.m2/repository/commons-codec/commons-codec/1.3/commons-codec-1.3-javadoc.jar!/"/>
+			<attribute name="javadoc_location" value="jar:file:/home/timp/.m2/repository/commons-codec/commons-codec/1.2/commons-codec-1.2-javadoc.jar!/"/>
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="var" path="M2_REPO/commons-collections/commons-collections/3.2/commons-collections-3.2.jar" sourcepath="M2_REPO/commons-collections/commons-collections/3.2/commons-collections-3.2-sources.jar"/>
-	<classpathentry kind="var" path="M2_REPO/commons-httpclient/commons-httpclient/3.0.1/commons-httpclient-3.0.1.jar" sourcepath="M2_REPO/commons-httpclient/commons-httpclient/3.0.1/commons-httpclient-3.0.1-sources.jar"/>
+	<classpathentry kind="var" path="M2_REPO/commons-httpclient/commons-httpclient/3.1/commons-httpclient-3.1.jar" sourcepath="M2_REPO/commons-httpclient/commons-httpclient/3.1/commons-httpclient-3.1-sources.jar"/>
 	<classpathentry kind="var" path="M2_REPO/commons-io/commons-io/1.3/commons-io-1.3.jar" sourcepath="M2_REPO/commons-io/commons-io/1.3/commons-io-1.3-sources.jar"/>
-	<classpathentry kind="var" path="M2_REPO/commons-lang/commons-lang/2.4/commons-lang-2.4.jar">
+	<classpathentry kind="var" path="M2_REPO/commons-lang/commons-lang/2.4/commons-lang-2.4.jar" sourcepath="M2_REPO/commons-lang/commons-lang/2.4/commons-lang-2.4-sources.jar">
 		<attributes>
 			<attribute name="javadoc_location" value="jar:file:/home/timp/.m2/repository/commons-lang/commons-lang/2.4/commons-lang-2.4-javadoc.jar!/"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="var" path="M2_REPO/commons-logging/commons-logging/1.1.1/commons-logging-1.1.1.jar" sourcepath="M2_REPO/commons-logging/commons-logging/1.1.1/commons-logging-1.1.1-sources.jar">
+	<classpathentry kind="var" path="M2_REPO/commons-logging/commons-logging/1.0.4/commons-logging-1.0.4.jar" sourcepath="M2_REPO/commons-logging/commons-logging/1.0.4/commons-logging-1.0.4-sources.jar">
 		<attributes>
-			<attribute name="javadoc_location" value="jar:file:/home/timp/.m2/repository/commons-logging/commons-logging/1.1.1/commons-logging-1.1.1-javadoc.jar!/"/>
+			<attribute name="javadoc_location" value="jar:file:/home/timp/.m2/repository/commons-logging/commons-logging/1.0.4/commons-logging-1.0.4-javadoc.jar!/"/>
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="var" path="M2_REPO/org/eclipse/jdt/core/3.1.1/core-3.1.1.jar"/>
@@ -85,7 +85,7 @@
 	</classpathentry>
 	<classpathentry kind="var" path="M2_REPO/org/mortbay/jetty/jsp-2.1/6.1.5/jsp-2.1-6.1.5.jar" sourcepath="M2_REPO/org/mortbay/jetty/jsp-2.1/6.1.5/jsp-2.1-6.1.5-sources.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/mortbay/jetty/jsp-api-2.1/6.1.5/jsp-api-2.1-6.1.5.jar" sourcepath="M2_REPO/org/mortbay/jetty/jsp-api-2.1/6.1.5/jsp-api-2.1-6.1.5-sources.jar"/>
-	<classpathentry kind="var" path="M2_REPO/junit/junit/4.5/junit-4.5.jar" sourcepath="M2_REPO/junit/junit/4.5/junit-4.5-sources.jar"/>
+	<classpathentry kind="var" path="M2_REPO/junit/junit/3.8.2/junit-3.8.2.jar" sourcepath="M2_REPO/junit/junit/4.5/junit-4.5-sources.jar"/>
 	<classpathentry kind="var" path="M2_REPO/net/sourceforge/jwebunit/jwebunit-core/1.4.1/jwebunit-core-1.4.1.jar" sourcepath="M2_REPO/net/sourceforge/jwebunit/jwebunit-core/1.4.1/jwebunit-core-1.4.1-sources.jar">
 		<attributes>
 			<attribute name="javadoc_location" value="jar:file:/home/timp/.m2/repository/net/sourceforge/jwebunit/jwebunit-core/1.4.1/jwebunit-core-1.4.1-javadoc.jar!/"/>
@@ -103,7 +103,7 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="var" path="M2_REPO/nekohtml/nekohtml/0.9.5/nekohtml-0.9.5.jar" sourcepath="M2_REPO/nekohtml/nekohtml/0.9.5/nekohtml-0.9.5-sources.jar"/>
-	<classpathentry kind="var" path="M2_REPO/de/fuberlin/wiwss/ng4j/ng4j/0.9.3-SNAPSHOT/ng4j-0.9.3-SNAPSHOT.jar" sourcepath="M2_REPO/de/fuberlin/wiwss/ng4j/ng4j/0.9.2/ng4j-0.9.2-sources.jar"/>
+	<classpathentry kind="var" path="M2_REPO/de/fuberlin/wiwss/ng4j/ng4j/0.9.3-SNAPSHOT/ng4j-0.9.3-SNAPSHOT.jar"/>
 	<classpathentry kind="var" path="M2_REPO/uk/ac/ox/oucs/erewhon/oxpoints/0.2/oxpoints-0.2.jar" sourcepath="M2_REPO/uk/ac/ox/oucs/erewhon/oxpoints/0.2/oxpoints-0.2-sources.jar">
 		<attributes>
 			<attribute name="javadoc_location" value="jar:file:/home/timp/.m2/repository/uk/ac/ox/oucs/erewhon/oxpoints/0.2/oxpoints-0.2-javadoc.jar!/"/>

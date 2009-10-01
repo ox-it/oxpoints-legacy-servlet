@@ -19,10 +19,10 @@ public abstract class OxPointsServlet extends HttpServlet {
 
   private static final long serialVersionUID = 3396470051960258977L;
 
-  protected static Gaboto gaboto;
-  protected static GabotoSnapshot snapshot;
-  protected static GabotoConfiguration config;
-  protected static Calendar startTime;
+  protected static Gaboto gaboto = null;
+  protected static GabotoSnapshot snapshot = null;
+  protected static GabotoConfiguration config = null;
+  protected static Calendar startTime = null;
 
   public OxPointsServlet() {
     super();
@@ -30,19 +30,27 @@ public abstract class OxPointsServlet extends HttpServlet {
 
   public void init() {
     System.err.println("init");
-    config = GabotoConfiguration.fromConfigFile();
+    if (startTime == null) { 
+      config = GabotoConfiguration.fromConfigFile();
   
-    gaboto = GabotoFactory.readPersistedGaboto(GabotoAccess.getResourceOrDie("graphs.rdf"), GabotoAccess.getResourceOrDie("cdg.rdf"));
-    gaboto.recreateTimeDimensionIndex();
+      gaboto = GabotoFactory.readPersistedGaboto(GabotoAccess.getResourceOrDie(Gaboto.GRAPH_FILE_NAME), GabotoAccess.getResourceOrDie(Gaboto.CDG_FILE_NAME));
+      gaboto.recreateTimeDimensionIndex();
   
-    startTime = Calendar.getInstance();
+      startTime = Calendar.getInstance();
   
-    snapshot = gaboto.getSnapshot(TimeInstant.from(startTime));
+      snapshot = gaboto.getSnapshot(TimeInstant.from(startTime));
+    }
   
   }
 
+  /**
+   * I am not that happy with this. 
+   * The whole pessage page is written to th log file, but hey, it is no worse than printing a stack trace. 
+   * 
+   */
   protected void error(HttpServletRequest request, HttpServletResponse response, AnticipatedException exception) {
     response.setContentType("text/html");
+    System.err.println(exception.getHttpStatusCode());
     response.setStatus(exception.getHttpStatusCode());
     PrintWriter out = null;
     try {
@@ -50,21 +58,24 @@ public abstract class OxPointsServlet extends HttpServlet {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-    out.println("<html><head><title>OxPoints Anticipated Error</title></head>");
-    out.println("<body>");
-    out.println("<h2>OxPoints Anticipated Error</h2>");
-    out.println("<h3>" + exception.getMessage() + "</h3>");
-    out.println("<p>An anticipated error has occured in the application");
-    out.println("that runs this website, please contact <a href='mailto:");
-    out.println(getSysAdminEmail() + "'>" + getSysAdminName() + "</a>");
-    out.println(", with the information given below.</p>");
-    out.println("<h3> Invoked with " + request.getRequestURL().toString() + "</h3>");
+    out.write("<html><head><title>OxPoints Anticipated Error</title></head>\n");
+    out.write("<body>\n");
+    out.write("<h2>OxPoints Anticipated Error</h2>\n");
+    out.write("<h3>" + exception.getMessage() + "</h3>\n");
+    out.write("<p>An anticipated error has occured in the application\n");
+    out.write("that runs this website, please contact <a href='mailto:");
+    out.write(getSysAdminEmail() + "'>" + getSysAdminName() + "</a>");
+    out.write(", with the information given below.</p>\n");
+    out.write("<h3> Invoked with " + request.getRequestURL().toString() + "</h3>\n");
     if (request.getQueryString() != null)
-      out.println("<h3> query " + request.getQueryString() + "</h3>");
-    out.println("<h4><font color='red'><pre>");
+      out.write("<h3> query " + request.getQueryString() + "</h3>\n");
+    out.write("<h4><font color='red'><pre>");
     exception.printStackTrace(out);
-    out.println("</pre></font></h4>");
-    out.println("</body></html>");
+    out.write("</pre></font></h4>\n");
+    out.write("</body></html>\n");
+    
+    out.flush();
+    out.close();
   
   }
 
@@ -173,6 +184,15 @@ public abstract class OxPointsServlet extends HttpServlet {
     return url.toString();
   }
 
+  public static String servletURL(HttpServletRequest request, String servletName) {
+    StringBuffer url = new StringBuffer();
+    appendZoneURL(url, request);
+    url.append("/");
+    url.append(servletName);
+    return url.toString();
+  }
+
+  
   /**
    * Retrieve a relative url from a request.
    * @param request the request to interrogate

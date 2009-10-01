@@ -42,10 +42,9 @@ import java.io.InputStream;
 public final class GabotoAccess {
 
   static InputStream getResourceOrDie(String fileName) {
-    String resourceName = fileName;
-    InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream(resourceName);
+    InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream(fileName);
     if (is == null)
-      throw new NullPointerException("File " + resourceName + " cannot be loaded");
+      throw new NullPointerException("File " + fileName + " cannot be loaded");
     return is;
   }
 

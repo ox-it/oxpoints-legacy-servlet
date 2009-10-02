@@ -5,6 +5,9 @@ import java.io.PrintWriter;
 import java.util.Calendar;
 import java.util.Enumeration;
 
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -20,11 +23,12 @@ public abstract class OxPointsServlet extends HttpServlet {
 
   private static final long serialVersionUID = 3396470051960258977L;
 
-  protected static Gaboto gaboto = null;
-  protected static GabotoSnapshot snapshot = null;
   protected static GabotoConfiguration config = null;
   protected static Calendar startTime = null;
-  protected static String dataDirectory = null; 
+
+  protected Gaboto gaboto = null;
+  protected GabotoSnapshot snapshot = null;
+  protected String dataDirectory = null; 
   
   public OxPointsServlet() {
     super();
@@ -32,16 +36,26 @@ public abstract class OxPointsServlet extends HttpServlet {
     System.err.println("Constuctor called"+this.toString());
   }
 
+
   public void init() {
     config = GabotoConfiguration.fromConfigFile();
+    startTime = Calendar.getInstance();
+  }
+  
+  /**
+   * Establish which datastore we are looking at.
+   * 
+   * @see javax.servlet.http.HttpServlet#service(javax.servlet.ServletRequest, javax.servlet.ServletResponse)
+   */
+  @Override
+  public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException {
     dataDirectory = getDataDirectory(); 
     System.err.println("Reading from " + dataDirectory);
     gaboto = GabotoFactory.getGaboto(dataDirectory);
-    gaboto.recreateTimeDimensionIndex();
-    startTime = Calendar.getInstance();
-    snapshot = gaboto.getSnapshot(TimeInstant.from(startTime));
+    snapshot = GabotoFactory.getSnapshot(dataDirectory, TimeInstant.from(startTime));
+    super.service(req, res);
   }
-  
+
   private String getDataDirectory() {
     String initParam = getServletConfig().getInitParameter("dataDirectory");
     System.err.println("initParam in OxPointsServlet " + initParam);

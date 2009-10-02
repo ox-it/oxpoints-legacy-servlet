@@ -37,7 +37,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.Collection;
-import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Map.Entry;
@@ -90,12 +89,6 @@ public class OxPointsQueryServlet extends OxPointsServlet {
   
   @Override
   public void doGet(HttpServletRequest request, HttpServletResponse response) {
-    System.err.println("Still here");
-    Enumeration<String> them = getServletConfig().getInitParameterNames();
-    while (them.hasMoreElements()) { 
-      String it = them.nextElement();
-      System.err.println(it + "=" + getServletConfig().getInitParameter(it));
-    }
     
     response.setCharacterEncoding("UTF-8");
     try {

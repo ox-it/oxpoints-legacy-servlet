@@ -92,8 +92,10 @@ public class OxPointsQueryServlet extends OxPointsServlet {
   public void doGet(HttpServletRequest request, HttpServletResponse response) {
     System.err.println("Still here");
     Enumeration<String> them = getServletConfig().getInitParameterNames();
-    while (them.hasMoreElements())
-      System.err.println(them.nextElement());
+    while (them.hasMoreElements()) { 
+      String it = them.nextElement();
+      System.err.println(it + "=" + getServletConfig().getInitParameter(it));
+    }
     
     response.setCharacterEncoding("UTF-8");
     try {

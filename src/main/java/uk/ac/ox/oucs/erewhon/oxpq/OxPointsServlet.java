@@ -36,7 +36,7 @@ public abstract class OxPointsServlet extends HttpServlet {
     config = GabotoConfiguration.fromConfigFile();
     dataDirectory = getDataDirectory(); 
     System.err.println("Reading from " + dataDirectory);
-    gaboto = GabotoFactory.readPersistedGaboto(dataDirectory);
+    gaboto = GabotoFactory.getGaboto(dataDirectory);
     gaboto.recreateTimeDimensionIndex();
     startTime = Calendar.getInstance();
     snapshot = gaboto.getSnapshot(TimeInstant.from(startTime));

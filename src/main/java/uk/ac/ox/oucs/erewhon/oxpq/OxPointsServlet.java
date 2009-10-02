@@ -3,7 +3,6 @@ package uk.ac.ox.oucs.erewhon.oxpq;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Calendar;
-import java.util.Enumeration;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
@@ -50,21 +49,17 @@ public abstract class OxPointsServlet extends HttpServlet {
   @Override
   public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException {
     dataDirectory = getDataDirectory(); 
-    System.err.println("Reading from " + dataDirectory);
     gaboto = GabotoFactory.getGaboto(dataDirectory);
     snapshot = GabotoFactory.getSnapshot(dataDirectory, TimeInstant.from(startTime));
+    System.err.println("In Service call ");
+    System.err.println("Reading from " + dataDirectory);
+    System.err.println("Snapshot " + snapshot);
+    
     super.service(req, res);
   }
 
   private String getDataDirectory() {
     String initParam = getServletConfig().getInitParameter("dataDirectory");
-    System.err.println("initParam in OxPointsServlet " + initParam);
-    
-    Enumeration<String> them = getServletConfig().getInitParameterNames();
-    while (them.hasMoreElements())
-      System.err.println(them.nextElement());
-    System.err.println(getServletConfig());
-    
     return initParam == null ? config.getDataDirectory() : initParam;
   }
   

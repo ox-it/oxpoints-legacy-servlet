@@ -39,6 +39,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import net.sf.gaboto.time.TimeInstant;
+
 
 public class OxPointsEditorServlet extends OxPointsServlet  {
 
@@ -50,16 +52,6 @@ public class OxPointsEditorServlet extends OxPointsServlet  {
     super.init();
   }
 
-
-
-  /**
-   * @see javax.servlet.http.HttpServlet#doGet(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
-   */
-  @Override
-  protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-    System.err.println("doGet - redirecting");
-    new OxPointsQueryServlet().doGet(request,response);
-  }
 
 
 
@@ -84,14 +76,14 @@ public class OxPointsEditorServlet extends OxPointsServlet  {
     System.err.println("Lines:" + lines + ":");
     System.err.println("We have " + snapshot.size() + " entities in snapshot before read");
     gaboto.read(lines);
-    System.err.println("We have " + gaboto.getJenaModelViewOnNamedGraphSet().size() +  " entities after read");    
+    System.err.println("We have " + gaboto.getJenaModelViewOnNamedGraphSet().size() +  " entities in gaboto after read");    
     System.err.println("We have " + snapshot.size() + " entities in snapshot after read");
     
     gaboto.recreateTimeDimensionIndex();
     System.err.println("We have " + snapshot.size() + " entities in snapshot after index recreation");
-    snapshot = gaboto.getSnapshot();
+    snapshot = gaboto.getSnapshot(TimeInstant.from(startTime));
     System.err.println("We have " + snapshot.size() + " entities in snapshot after refresh");
-    System.err.println("We have " + gaboto.getJenaModelViewOnNamedGraphSet().size() +  " known entities after read");
+    System.err.println("We have " + gaboto.getJenaModelViewOnNamedGraphSet().size() +  " entities in gaboto after read");
     //for (Statement s in t.getSnapshot(t.getConfig().getContextDependantGraphURI()).getModel().listStatements() )
     response.setStatus(201);
     String successUrl = servletURL(request, "OxPQ") + "/id/44443610";// + gaboto.getCurrentHighestId();

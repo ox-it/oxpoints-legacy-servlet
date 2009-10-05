@@ -38,6 +38,7 @@ import java.util.TreeMap;
 
 import javax.servlet.http.HttpServletRequest;
 
+import net.sf.gaboto.time.TimeInstant;
 import net.sf.gaboto.vocabulary.DCVocab;
 import net.sf.gaboto.vocabulary.GabotoKMLVocab;
 import net.sf.gaboto.vocabulary.GabotoVocab;
@@ -73,6 +74,8 @@ public final class Query {
   private Property orderByProperty;
   private Property arcProperty;
   private Property requestedProperty;
+  
+  private TimeInstant timeInstant = null;
   
   private ReturnType returnType = ReturnType.ALL;
   private String folderClassURI = OxPointsVocab.NS + "College";
@@ -193,6 +196,9 @@ public final class Query {
           q.orderBy = pValue;
         else 
           throw new AnticipatedException("Unrecognised orderBy property name " + pValue, 400);
+      }
+      else if (pName.equals("date")) {
+          q.timeInstant = new TimeInstant(pValue);
       }
       else if (pName.equals("jsCallback"))
         q.jsCallback = pValue;
@@ -509,6 +515,10 @@ public final class Query {
       throw new AnticipatedException("Invalid id " + participantId, 400);
     }
     this.participantId = participantId;
+  }
+
+  public TimeInstant getTimeInstant() {
+    return timeInstant;
   }
 
 }

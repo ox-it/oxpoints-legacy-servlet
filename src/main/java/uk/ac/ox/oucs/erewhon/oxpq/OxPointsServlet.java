@@ -16,7 +16,6 @@ import net.sf.gaboto.Gaboto;
 import net.sf.gaboto.GabotoConfiguration;
 import net.sf.gaboto.GabotoFactory;
 import net.sf.gaboto.GabotoSnapshot;
-import net.sf.gaboto.time.TimeInstant;
 
 public abstract class OxPointsServlet extends HttpServlet {
 
@@ -39,7 +38,9 @@ public abstract class OxPointsServlet extends HttpServlet {
   public void init() {
     config = GabotoConfiguration.fromConfigFile();
     startTime = Calendar.getInstance();
+    System.err.println("OxpointsServelet.init leaving");
   }
+  
   
   /**
    * Establish which datastore we are looking at.
@@ -48,12 +49,13 @@ public abstract class OxPointsServlet extends HttpServlet {
    */
   @Override
   public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException {
-    dataDirectory = getDataDirectory(); 
-    gaboto = GabotoFactory.getGaboto(dataDirectory);
-    snapshot = GabotoFactory.getSnapshot(dataDirectory, TimeInstant.from(startTime));
     System.err.println("In Service call ");
-    System.err.println("Reading from " + dataDirectory);
-    System.err.println("Snapshot " + snapshot);
+    dataDirectory = getDataDirectory(); 
+    System.err.println("Datadictionary " + dataDirectory);
+    gaboto = GabotoFactory.getGaboto(dataDirectory);
+    System.err.println("Gaboto contains " + gaboto.getJenaModelViewOnNamedGraphSet().size() +  " entities");
+    
+
     
     super.service(req, res);
   }

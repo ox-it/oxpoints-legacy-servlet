@@ -45,12 +45,14 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import net.sf.gaboto.EntityDoesNotExistException;
+import net.sf.gaboto.GabotoFactory;
 import net.sf.gaboto.ResourceDoesNotExistException;
 import net.sf.gaboto.node.GabotoEntity;
 import net.sf.gaboto.node.pool.EntityPool;
 import net.sf.gaboto.node.pool.EntityPoolConfiguration;
 import net.sf.gaboto.query.GabotoQuery;
 import net.sf.gaboto.query.UnsupportedQueryFormatException;
+import net.sf.gaboto.time.TimeInstant;
 import net.sf.gaboto.transformation.EntityPoolTransformer;
 import net.sf.gaboto.transformation.GeoJSONPoolTransfomer;
 import net.sf.gaboto.transformation.JSONPoolTransformer;
@@ -115,6 +117,13 @@ public class OxPointsQueryServlet extends OxPointsServlet {
 
   void outputPool(HttpServletRequest request, HttpServletResponse response) throws ResourceNotFoundException {
     Query query = Query.fromRequest(request);
+    if (query.getTimeInstant() == null)
+      snapshot = GabotoFactory.getSnapshot(dataDirectory, TimeInstant.from(startTime));
+    else 
+      snapshot = GabotoFactory.getSnapshot(dataDirectory, query.getTimeInstant());
+    System.err.println("Snapshot " + snapshot + " contains " + snapshot.size() + " entities ");
+    
+    
     switch (query.getReturnType()) {
     case META_TIMESTAMP:
       try {
@@ -142,7 +151,8 @@ public class OxPointsQueryServlet extends OxPointsServlet {
       System.err.println("Still here2");
       establishParticipantUri(query);
       System.err.println("Still here3");
-      System.err.println("We have " + snapshot.size() + " entities in snapshot before loadEntity");
+      if (snapshot != null)
+        System.err.println("We have " + snapshot.size() + " entities in snapshot before loadEntity");
       pool.addEntity(snapshot.loadEntity(query.getUri()));
       System.err.println("Still here4");
       output(pool, query, response);

@@ -2,7 +2,6 @@
 <classpath>
 	<classpathentry including="**/*.java" kind="src" output="target/test-classes" path="src/test/java"/>
 	<classpathentry kind="src" path="src/main/java"/>
-	<classpathentry including="**/*.*" kind="src" path="resources"/>
 	<classpathentry kind="var" path="M2_REPO/javax/servlet/servlet-api/2.4/servlet-api-2.4.jar" sourcepath="M2_REPO/javax/servlet/servlet-api/2.4/servlet-api-2.4-sources.jar"/>
 	<classpathentry kind="var" path="M2_REPO/ant/ant/1.6.5/ant-1.6.5.jar" sourcepath="M2_REPO/ant/ant/1.6.5/ant-1.6.5-sources.jar"/>
 	<classpathentry kind="var" path="M2_REPO/antlr/antlr/2.7.7/antlr-2.7.7.jar"/>

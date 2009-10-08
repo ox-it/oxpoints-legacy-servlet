@@ -94,10 +94,7 @@ public class OxPointsQueryServlet extends OxPointsServlet {
     
     response.setCharacterEncoding("UTF-8");
     try {
-      System.err.println("about to estblish outputPool");
       outputPool(request, response);
-      
-      System.err.println("No Error here");
     } catch (ResourceNotFoundException e) {
       try {
         response.sendError(404, e.getMessage());
@@ -146,17 +143,12 @@ public class OxPointsQueryServlet extends OxPointsServlet {
       output(EntityPool.createFrom(snapshot), query, response);
       return;
     case INDIVIDUAL:
-      System.err.println("Still here1");
       EntityPool pool = new EntityPool(gaboto, snapshot);
-      System.err.println("Still here2");
       establishParticipantUri(query);
-      System.err.println("Still here3");
       if (snapshot != null)
         System.err.println("We have " + snapshot.size() + " entities in snapshot before loadEntity");
       pool.addEntity(snapshot.loadEntity(query.getUri()));
-      System.err.println("Still here4");
       output(pool, query, response);
-      System.err.println("Still here5");
       return;
     case TYPE_COLLECTION:
       output(loadPoolWithEntitiesOfType(query.getType()), query, response);
@@ -174,7 +166,6 @@ public class OxPointsQueryServlet extends OxPointsServlet {
               " and value " + query.getParticipantCode());
         GabotoEntity object = snapshot.loadEntity(query.getUri());
         EntityPool creationPool = EntityPool.createFrom(snapshot);
-        System.err.println("CreationPool size " + creationPool.size());
         object.setCreatedFromPool(creationPool);
         subjectPool = loadPoolWithActiveParticipants(object, query.getRequestedProperty()); 
       } else { 
@@ -209,7 +200,6 @@ public class OxPointsQueryServlet extends OxPointsServlet {
   }
 
   private EntityPool loadPoolWithEntitiesOfProperty(Property prop, String value) {
-    System.err.println("loadPoolWithEntitiesOfProperty" + prop + ":" + value);
     if (prop == null)
       throw new NullPointerException();
     EntityPool pool = null;
@@ -220,7 +210,6 @@ public class OxPointsQueryServlet extends OxPointsServlet {
       for (String v : values) {
         if (requiresResource(prop)) {
           Resource r = getResource(v);
-          System.err.println("About to load " + prop + " with value " + r);
           pool = becomeOrAdd(pool, snapshot.loadEntitiesWithProperty(prop, r));
         } else {
           pool = becomeOrAdd(pool, snapshot.loadEntitiesWithProperty(prop, v));
@@ -235,7 +224,7 @@ public class OxPointsQueryServlet extends OxPointsServlet {
     if (prop == null)
       throw new NullPointerException();
     EntityPool pool = new EntityPool(gaboto, snapshot);
-    System.err.println("loadPoolWithActiveParticipants" + passiveParticipant.getUri() + "  prop " + prop + " which ");
+    //System.err.println("loadPoolWithActiveParticipants" + passiveParticipant.getUri() + "  prop " + prop + " which ");
     Set<Entry<String, Object>> passiveProperties = passiveParticipant.getAllPassiveProperties().entrySet(); 
     for (Entry<String, Object> entry : passiveProperties) {
       if (entry.getKey().equals(prop.getURI())) {
@@ -244,12 +233,10 @@ public class OxPointsQueryServlet extends OxPointsServlet {
             HashSet<Object> them = (HashSet<Object>)entry.getValue(); 
             for (Object e : them) { 
               if (e instanceof GabotoEntity) {
-                System.err.println("Adding set member :" + e);
                 pool.add((GabotoEntity)e);
               }
             }
           } else if (entry.getValue() instanceof GabotoEntity) { 
-            System.err.println("Adding individual :" + entry.getKey());
             pool.add((GabotoEntity)entry.getValue());            
           } else { 
             System.err.println("Ignoring:" + entry.getKey());
@@ -266,9 +253,7 @@ public class OxPointsQueryServlet extends OxPointsServlet {
 
   private void establishParticipantUri(Query query) throws ResourceNotFoundException { 
     if (query.needsCodeLookup()) {
-      System.err.println("need");
       Property coding = Query.getPropertyFromAbreviation(query.getParticipantCoding());
-      System.err.println("establishUri" + query.getParticipantCode());
       
       EntityPool objectPool = snapshot.loadEntitiesWithProperty(coding, query.getParticipantCode());
       boolean found = false;
@@ -288,7 +273,6 @@ public class OxPointsQueryServlet extends OxPointsServlet {
     if (prop == null)
       throw new NullPointerException();
     EntityPool pool = new EntityPool(gaboto, snapshot);
-    System.err.println("loadPoolWithPassiveParticipants" + activeParticipant.getUri() + "  prop " + prop + " which ");
     Set<Entry<String, Object>> directProperties = activeParticipant.getAllDirectProperties().entrySet(); 
     for (Entry<String, Object> entry : directProperties) {
       if (entry.getKey().equals(prop.getURI())) {
@@ -316,7 +300,6 @@ public class OxPointsQueryServlet extends OxPointsServlet {
   }
 
   private EntityPool becomeOrAdd(EntityPool pool, EntityPool poolToAdd) {
-    System.err.println("BecomeOrAdd" + pool);
     if (poolToAdd == null)
       throw new NullPointerException();
     if (pool == null) {
@@ -356,7 +339,6 @@ public class OxPointsQueryServlet extends OxPointsServlet {
   }
 
   private EntityPool loadPoolWithEntitiesOfType(String type) {
-    System.err.println("Type:" + type);
     String types[] = type.split("[|]");
 
     EntityPoolConfiguration conf = new EntityPoolConfiguration(snapshot);

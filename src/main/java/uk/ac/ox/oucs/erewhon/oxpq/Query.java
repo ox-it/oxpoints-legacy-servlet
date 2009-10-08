@@ -403,7 +403,6 @@ public final class Query {
     for (String prefix : namespacePrefixes.keySet()) {
       String key = namespacePrefixes.get(prefix) + propertyAbreviation;
       Property p = getPropertyNamed(key);
-      System.err.println("Que:"+key + "=" + p);
       if (p != null)
         return p; 
     }
@@ -412,7 +411,6 @@ public final class Query {
 
   static String getValidClassURI(String className) { 
     for (String prefix : namespacePrefixes.keySet()) {
-      System.err.println("Que:"+prefix);
       String key = namespacePrefixes.get(prefix) + className;
       if (isValidClass(key))
         return key; 

@@ -121,7 +121,7 @@ public final class Query {
     if (pathInfo == null) 
       throw new AnticipatedException("Expected path info", 400  );
     int dotPosition = pathInfo.lastIndexOf('.');
-    System.err.println(pathInfo);
+    //System.err.println(pathInfo);
     String resultsetSpec;
     if (dotPosition == -1) {
       resultsetSpec = pathInfo;
@@ -129,7 +129,7 @@ public final class Query {
       q.format = pathInfo.substring(dotPosition + 1);
       resultsetSpec = pathInfo.substring(0,dotPosition);
     }    
-    System.err.println(resultsetSpec);
+    //System.err.println(resultsetSpec);
     if (resultsetSpec.startsWith("/timestamp")) {
       q.returnType = ReturnType.META_TIMESTAMP;
     } else if (resultsetSpec.startsWith("/types") || resultsetSpec.startsWith("/classes")) {
@@ -162,7 +162,7 @@ public final class Query {
       String pName = en.nextElement();
       String pValue =  request.getParameter(pName);
 
-      System.err.println("Param:" + pName + "=" + pValue);
+      //System.err.println("Param:" + pName + "=" + pValue);
       if (pName.equals("arc")) {
         q.arcProperty = getPropertyFromAbreviation(pValue);
         if (q.arcProperty != null)
@@ -365,7 +365,7 @@ public final class Query {
   private static 
   String getPropertyName(String pathInfo) {
     String[] tokens = getTokens(pathInfo);
-    System.err.println("Token:" + tokens[0]);
+    //System.err.println("Token:" + tokens[0]);
     if (getPropertyFromAbreviation(tokens[0]) != null)
       return tokens[0];
     else 

@@ -31,14 +31,14 @@ public abstract class OxPointsServlet extends HttpServlet {
   public OxPointsServlet() {
     super();
     
-    System.err.println("Constuctor called"+this.toString());
+    //System.err.println("Constuctor called"+this.toString());
   }
 
 
   public void init() {
     config = GabotoConfiguration.fromConfigFile();
     startTime = Calendar.getInstance();
-    System.err.println("OxpointsServelet.init leaving");
+    //System.err.println("OxpointsServelet.init leaving");
   }
   
   
@@ -49,11 +49,11 @@ public abstract class OxPointsServlet extends HttpServlet {
    */
   @Override
   public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException {
-    System.err.println("In Service call ");
+    //System.err.println("In Service call ");
     dataDirectory = getDataDirectory(); 
-    System.err.println("Datadictionary " + dataDirectory);
+    //System.err.println("Datadictionary " + dataDirectory);
     gaboto = GabotoFactory.getGaboto(dataDirectory);
-    System.err.println("Gaboto contains " + gaboto.getJenaModelViewOnNamedGraphSet().size() +  " entities");
+    //System.err.println("Gaboto contains " + gaboto.getJenaModelViewOnNamedGraphSet().size() +  " entities");
     
 
     

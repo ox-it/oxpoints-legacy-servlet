@@ -118,7 +118,7 @@ public class OxPointsQueryServlet extends OxPointsServlet {
       snapshot = GabotoFactory.getSnapshot(dataDirectory, TimeInstant.from(startTime));
     else 
       snapshot = GabotoFactory.getSnapshot(dataDirectory, query.getTimeInstant());
-    System.err.println("Snapshot " + snapshot + " contains " + snapshot.size() + " entities ");
+    //System.err.println("Snapshot " + snapshot + " contains " + snapshot.size() + " entities ");
     
     
     switch (query.getReturnType()) {
@@ -146,7 +146,7 @@ public class OxPointsQueryServlet extends OxPointsServlet {
       EntityPool pool = new EntityPool(gaboto, snapshot);
       establishParticipantUri(query);
       if (snapshot != null)
-        System.err.println("We have " + snapshot.size() + " entities in snapshot before loadEntity");
+	  System.err.println("We have " + snapshot.size() + " entities in snapshot before loadEntity");
       pool.addEntity(snapshot.loadEntity(query.getUri()));
       output(pool, query, response);
       return;
@@ -401,7 +401,7 @@ public class OxPointsQueryServlet extends OxPointsServlet {
   }
 
   private void output(EntityPool pool, Query query, HttpServletResponse response) {
-    System.err.println("Pool has " + pool.getSize() + " elements");
+      //System.err.println("Pool has " + pool.getSize() + " elements");
 
     String output = "";
     if (query.getFormat().equals("kml")) {
@@ -503,7 +503,7 @@ public class OxPointsQueryServlet extends OxPointsServlet {
 
     String output = "";
     String command = "/usr/bin/gpsbabel -i " + formatIn + " -o " + formatOut + " -f - -F -";
-    System.err.println("GPSBabel command:" + command);
+    //System.err.println("GPSBabel command:" + command);
     Process process;
     try {
       process = Runtime.getRuntime().exec(command, null, null);
@@ -579,7 +579,7 @@ public class OxPointsQueryServlet extends OxPointsServlet {
 
     String output = "";
     String command = "/usr/bin/gpsbabel -V";
-    System.err.println("GPSBabel command:" + command);
+    //System.err.println("GPSBabel command:" + command);
     Process process;
     try {
       process = Runtime.getRuntime().exec(command, null, null);

@@ -31,7 +31,7 @@ public abstract class OxPointsServlet extends HttpServlet {
   public OxPointsServlet() {
     super();
     
-    //System.err.println("Constuctor called"+this.toString());
+    //System.err.println("Constructor called"+this.toString());
   }
 
 
@@ -102,12 +102,12 @@ public abstract class OxPointsServlet extends HttpServlet {
   }
 
   private String getSysAdminEmail() {
-    return "Tim.Pizey@oucs.ox.ac.uk";
+    return "oxpoints@oucs.ox.ac.uk";
   
   }
 
   private String getSysAdminName() {
-    return "Tim Pizey";
+    return "The OxPoints Team";
   }
   /**
    * Add a Zone URL to buffer.

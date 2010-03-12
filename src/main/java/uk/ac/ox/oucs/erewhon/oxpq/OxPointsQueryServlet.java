@@ -403,7 +403,7 @@ public class OxPointsQueryServlet extends OxPointsServlet {
   private void output(EntityPool pool, Query query, HttpServletResponse response) {
       //System.err.println("Pool has " + pool.getSize() + " elements");
 
-    String output = "";
+    String output = "", format = query.getFormat();
     if (query.getFormat().equals("kml")) {
       output = createKml(pool, query);
       response.setContentType("application/vnd.google-earth.kml+xml");
@@ -431,15 +431,32 @@ public class OxPointsQueryServlet extends OxPointsServlet {
       if (query.getJsCallback() != null)
         output = query.getJsCallback() + "(" + output + ");";
       response.setContentType("text/javascript");
-    } else if (query.getFormat().equals("xml")) {
-      EntityPoolTransformer transformer;
-      try {
-        transformer = RDFPoolTransformerFactory.getRDFPoolTransformer(GabotoQuery.FORMAT_RDF_XML_ABBREV);
-        output = transformer.transform(pool);
-      } catch (UnsupportedQueryFormatException e) {
-        throw new IllegalArgumentException(e);
-      }
-      response.setContentType("application/rdf+xml");
+      
+    } else if (format.equals("xml") || format.equals("n3") || format.equals("ttl") || format.equals("nt")) {
+    	String outputFormat, contentType;
+    	if (format.equals("xml")) {
+    		format = GabotoQuery.FORMAT_RDF_XML_ABBREV;
+    		contentType = "application/rdf+xml";
+    	} else if (format.equals("ttl")) {
+    		format = GabotoQuery.FORMAT_RDF_TURTLE;
+    		contentType = "text/turtle";
+    	} else if (format.equals("nt")) {
+    		format = GabotoQuery.FORMAT_RDF_N_TRIPLE;
+    		contentType = "text/plain";
+    	} else {
+    		format = GabotoQuery.FORMAT_RDF_N3;
+    		contentType = "text/n3";
+    	}
+    	
+    	EntityPoolTransformer transformer;
+    	try {
+    		transformer = RDFPoolTransformerFactory.getRDFPoolTransformer(format);
+    		output = transformer.transform(pool);
+    	} catch (UnsupportedQueryFormatException e) {
+    		throw new IllegalArgumentException(e);
+    	}
+    	response.setContentType(contentType);
+    	
     } else if (query.getFormat().equals("txt")) {
       try { 
         for (GabotoEntity entity: pool.getEntities()) { 

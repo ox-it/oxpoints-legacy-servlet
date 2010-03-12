@@ -508,7 +508,7 @@ public class OxPointsQueryServlet extends OxPointsServlet {
     try {
       process = Runtime.getRuntime().exec(command, null, null);
     } catch (IOException e) {
-      throw new RuntimeException(e);
+    	throw new AnticipatedException("Not able to use GPSBabel to produce the desired output.", 501);
     }
     try {
       stdin = process.getOutputStream();

@@ -435,22 +435,22 @@ public class OxPointsQueryServlet extends OxPointsServlet {
     } else if (format.equals("xml") || format.equals("n3") || format.equals("ttl") || format.equals("nt")) {
     	String outputFormat, contentType;
     	if (format.equals("xml")) {
-    		format = GabotoQuery.FORMAT_RDF_XML_ABBREV;
+    		outputFormat = GabotoQuery.FORMAT_RDF_XML_ABBREV;
     		contentType = "application/rdf+xml";
     	} else if (format.equals("ttl")) {
-    		format = GabotoQuery.FORMAT_RDF_TURTLE;
+    		outputFormat = GabotoQuery.FORMAT_RDF_TURTLE;
     		contentType = "text/turtle";
     	} else if (format.equals("nt")) {
-    		format = GabotoQuery.FORMAT_RDF_N_TRIPLE;
+    		outputFormat = GabotoQuery.FORMAT_RDF_N_TRIPLE;
     		contentType = "text/plain";
     	} else {
-    		format = GabotoQuery.FORMAT_RDF_N3;
+    		outputFormat = GabotoQuery.FORMAT_RDF_N3;
     		contentType = "text/n3";
     	}
     	
     	EntityPoolTransformer transformer;
     	try {
-    		transformer = RDFPoolTransformerFactory.getRDFPoolTransformer(format);
+    		transformer = RDFPoolTransformerFactory.getRDFPoolTransformer(outputFormat);
     		output = transformer.transform(pool);
     	} catch (UnsupportedQueryFormatException e) {
     		throw new IllegalArgumentException(e);

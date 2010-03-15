@@ -83,6 +83,8 @@ public final class Query {
   private String folderClassURI = OxPointsVocab.NS + "College";
   private boolean needsCodeLookup;
   
+  private static final String ENTITY_PREFIX = "http://oxpoints.oucs.ox.ac.uk/id/";
+  
   public enum ReturnType {
     META_TIMESTAMP, META_TYPES, META_NEXT_ID, ALL, TYPE_COLLECTION, 
     INDIVIDUAL, 
@@ -113,6 +115,7 @@ public final class Query {
 	  map.put("hasOLISCode", OxPointsVocab.hasOLISCode);
 	  map.put("hasOBNCode", OxPointsVocab.hasOBNCode);
 	  map.put("hasPrimaryPlace", OxPointsVocab.hasPrimaryPlace);
+	  map.put("title", DCVocab.title);
 	  
 	  return map;
   }
@@ -157,7 +160,7 @@ public final class Query {
       q.returnType = ReturnType.ALL;
     } else if (resultsetSpec.startsWith("/id/")) {
       q.setParticipantId(resultsetSpec.substring(4));
-      q.participantUri = "http://m.ox.ac.uk/oxpoints/id/" + q.participantId;
+      q.participantUri = ENTITY_PREFIX + q.participantId;
       q.returnType = ReturnType.INDIVIDUAL;
     } else if (resultsetSpec.startsWith("/type/")) {  
       q.type = resultsetSpec.substring(6);
@@ -358,12 +361,12 @@ public final class Query {
     } else if (it.startsWith("id:")) {
       q.requestedPropertyValue = it.substring(3); 
       q.setParticipantId(q.requestedPropertyValue);
-      q.participantUri = "http://m.ox.ac.uk/oxpoints/id/" + q.participantId;
+      q.participantUri = ENTITY_PREFIX + q.participantId;
       return true;
     } else if (it.matches("^[0-9]+$")) { 
       q.requestedPropertyValue = it;       
       q.setParticipantId(it);
-      q.participantUri = "http://m.ox.ac.uk/oxpoints/id/" + q.participantId;
+      q.participantUri = ENTITY_PREFIX + q.participantId;
       return true;
     } else {
       return false;

@@ -46,6 +46,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import net.sf.gaboto.EntityDoesNotExistException;
 import net.sf.gaboto.GabotoFactory;
+import net.sf.gaboto.GabotoSnapshot;
 import net.sf.gaboto.ResourceDoesNotExistException;
 import net.sf.gaboto.node.GabotoEntity;
 import net.sf.gaboto.node.pool.EntityPool;
@@ -58,7 +59,6 @@ import net.sf.gaboto.transformation.GeoJSONPoolTransfomer;
 import net.sf.gaboto.transformation.JSONPoolTransformer;
 import net.sf.gaboto.transformation.KMLPoolTransformer;
 import net.sf.gaboto.transformation.RDFPoolTransformerFactory;
-import net.sf.gaboto.vocabulary.OxPointsVocab;
 
 import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.Resource;
@@ -81,568 +81,585 @@ import com.hp.hpl.jena.rdf.model.Resource;
 
 public class OxPointsQueryServlet extends OxPointsServlet {
 
-  private static final long serialVersionUID = 4155078999145248554L;
+	private static final long serialVersionUID = 4155078999145248554L;
 
-  private static String gpsbabelVersion = null;
+	private static String gpsbabelVersion = null;
 
-  public void init() {
-    super.init();
-  }
-  
-  @Override
-  public void doGet(HttpServletRequest request, HttpServletResponse response) {
-    
-    response.setCharacterEncoding("UTF-8");
-    try {
-      outputPool(request, response);
-    } catch (ResourceNotFoundException e) {
-      try {
-        response.sendError(404, e.getMessage());
-      } catch (IOException e1) {
-        error(request, response, new AnticipatedException("Problem reporting error: " + e.getMessage(), e1, 500));
-      }
-    } catch (EntityDoesNotExistException e) {
-      try {
-        response.sendError(404, e.getMessage());
-      } catch (IOException e1) {
-        error(request, response, new AnticipatedException("Problem reporting error: " + e.getMessage(),e1, 500));
-      }
-    } catch (AnticipatedException e) {
-      error(request, response, e);
-    }
-  }
+	public void init() {
+		super.init();
+	}
 
-  void outputPool(HttpServletRequest request, HttpServletResponse response) throws ResourceNotFoundException {
-    Query query = Query.fromRequest(request);
-    if (query.getTimeInstant() == null)
-      snapshot = GabotoFactory.getSnapshot(dataDirectory, TimeInstant.from(startTime));
-    else 
-      snapshot = GabotoFactory.getSnapshot(dataDirectory, query.getTimeInstant());
-    //System.err.println("Snapshot " + snapshot + " contains " + snapshot.size() + " entities ");
-    
-    
-    switch (query.getReturnType()) {
-    case META_TIMESTAMP:
-      try {
-        response.getWriter().write(new Long(startTime.getTimeInMillis()).toString());
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-      return;
-    case META_NEXT_ID:
-      try {
-        response.getWriter().write(new Long(snapshot.getGaboto().getCurrentHighestId() + 1).toString());
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-      return;
-    case META_TYPES:
-      output(snapshot.getGaboto().getConfig().getGabotoOntologyLookup().getRegisteredEntityClassesAsClassNames(), query, response);
-      return;
-    case ALL:
-      output(EntityPool.createFrom(snapshot), query, response);
-      return;
-    case INDIVIDUAL:
-      EntityPool pool = new EntityPool(gaboto, snapshot);
-      establishParticipantUri(query);
-      if (snapshot != null)
-	  System.err.println("We have " + snapshot.size() + " entities in snapshot before loadEntity");
-      pool.addEntity(snapshot.loadEntity(query.getUri()));
-      output(pool, query, response);
-      return;
-    case TYPE_COLLECTION:
-      output(loadPoolWithEntitiesOfType(query.getType()), query, response);
-      return;
-    case PROPERTY_ANY: // value null
-      output(loadPoolWithEntitiesOfProperty(query.getRequestedProperty(), query.getRequestedPropertyValue()), query,
-              response);
-      return;
-    case PROPERTY_SUBJECT:
-      EntityPool subjectPool = null;
-      if (requiresResource(query.getRequestedProperty())) {
-        establishParticipantUri(query);
-        if (query.getUri() == null)
-          throw new ResourceNotFoundException("Resource not found with coding " + query.getParticipantCoding() + 
-              " and value " + query.getParticipantCode());
-        GabotoEntity object = snapshot.loadEntity(query.getUri());
-        EntityPool creationPool = EntityPool.createFrom(snapshot);
-        object.setCreatedFromPool(creationPool);
-        subjectPool = loadPoolWithActiveParticipants(object, query.getRequestedProperty()); 
-      } else { 
-        subjectPool = loadPoolWithEntitiesOfProperty(query.getRequestedProperty(), query.getRequestedPropertyValue());         
-      }
-      output(subjectPool, query, response);
-      return;
-    case PROPERTY_OBJECT: 
-      establishParticipantUri(query);
-      if (query.getUri() == null)
-        throw new ResourceNotFoundException("Resource not found with coding " + query.getParticipantCoding() + 
-            " and value " + query.getParticipantCode());
-      GabotoEntity subject = snapshot.loadEntity(query.getUri());
-      
-      EntityPool objectPool = loadPoolWithPassiveParticipants(subject, query.getRequestedProperty());
-      output(objectPool, query, response);
-      return;
-    case NOT_FILTERED_TYPE_COLLECTION:
-      EntityPool p = loadPoolWithEntitiesOfType(query.getType());
-      EntityPool p2 = loadPoolWithEntitiesOfType(query.getType());
-      for (GabotoEntity e : p.getEntities()) 
-        if (e.getPropertyValue(query.getNotProperty(), false, false) != null)
-          p2.removeEntity(e);
-        
-      output(p2, query,
-              response);
-      return;
-    default:
-      throw new RuntimeException("Fell through case with value " + query.getReturnType());
-    }
+	@Override
+	public void doGet(HttpServletRequest request, HttpServletResponse response) {
 
-  }
+		response.setCharacterEncoding("UTF-8");
+		try {
+			outputPool(request, response);
+		} catch (ResourceNotFoundException e) {
+			try {
+				response.sendError(404, e.getMessage());
+			} catch (IOException e1) {
+				error(request, response, new AnticipatedException("Problem reporting error: " + e.getMessage(), e1, 500));
+			}
+		} catch (EntityDoesNotExistException e) {
+			try {
+				response.sendError(404, e.getMessage());
+			} catch (IOException e1) {
+				error(request, response, new AnticipatedException("Problem reporting error: " + e.getMessage(),e1, 500));
+			}
+		} catch (AnticipatedException e) {
+			error(request, response, e);
+		}
+	}
 
-  private EntityPool loadPoolWithEntitiesOfProperty(Property prop, String value) {
-    if (prop == null)
-      throw new NullPointerException();
-    EntityPool pool = null;
-    if (value == null) {
-      pool = snapshot.loadEntitiesWithProperty(prop);
-    } else {
-      String values[] = value.split("[|]");
-      for (String v : values) {
-        if (requiresResource(prop)) {
-          Resource r = getResource(v);
-          pool = becomeOrAdd(pool, snapshot.loadEntitiesWithProperty(prop, r));
-        } else {
-          pool = becomeOrAdd(pool, snapshot.loadEntitiesWithProperty(prop, v));
-        }
-      }
-    }
-    return pool;
-  }
-  
-  @SuppressWarnings("unchecked")
-  private EntityPool loadPoolWithActiveParticipants(GabotoEntity passiveParticipant, Property prop) { 
-    if (prop == null)
-      throw new NullPointerException();
-    EntityPool pool = new EntityPool(gaboto, snapshot);
-    //System.err.println("loadPoolWithActiveParticipants" + passiveParticipant.getUri() + "  prop " + prop + " which ");
-    Set<Entry<String, Object>> passiveProperties = passiveParticipant.getAllPassiveProperties().entrySet(); 
-    for (Entry<String, Object> entry : passiveProperties) {
-      if (entry.getKey().equals(prop.getURI())) {
-        if (entry.getValue() != null) {
-          if (entry.getValue() instanceof HashSet) { 
-            HashSet<Object> them = (HashSet<Object>)entry.getValue(); 
-            for (Object e : them) { 
-              if (e instanceof GabotoEntity) {
-                pool.add((GabotoEntity)e);
-              }
-            }
-          } else if (entry.getValue() instanceof GabotoEntity) { 
-            pool.add((GabotoEntity)entry.getValue());            
-          } else { 
-            System.err.println("Ignoring:" + entry.getKey());
-          }
-        } else { 
-          System.err.println("Ignoring:" + entry.getKey());
-        }
-      } else { 
-        System.err.println("Ignoring:" + entry.getKey());
-      }
-    }
-    return pool;
-  }
+	void outputPool(HttpServletRequest request, HttpServletResponse response) throws ResourceNotFoundException {
+		Query query = Query.fromRequest(request);
+		if (query.getTimeInstant() == null)
+			snapshot = GabotoFactory.getSnapshot(dataDirectory, TimeInstant.from(startTime));
+		else 
+			snapshot = GabotoFactory.getSnapshot(dataDirectory, query.getTimeInstant());
+		//System.err.println("Snapshot " + snapshot + " contains " + snapshot.size() + " entities ");
 
-  private void establishParticipantUri(Query query) throws ResourceNotFoundException { 
-    if (query.needsCodeLookup()) {
-      Property coding = Query.getPropertyFromAbbreviation(query.getParticipantCoding());
-      
-      EntityPool objectPool = snapshot.loadEntitiesWithProperty(coding, query.getParticipantCode());
-      boolean found = false;
-      for (GabotoEntity objectKey: objectPool) { 
-        if (found)
-          throw new RuntimeException("Found two:" + objectKey);
-        query.setParticipantUri(objectKey.getUri());
-        found = true;
-      }
-    }
-    if (query.getParticipantUri() == null)
-      throw new ResourceNotFoundException("No resource found with coding " + query.getParticipantCoding() + 
-          " and value " + query.getParticipantCode());
-  }
-  @SuppressWarnings("unchecked")
-  private EntityPool loadPoolWithPassiveParticipants(GabotoEntity activeParticipant, Property prop) { 
-    if (prop == null)
-      throw new NullPointerException();
-    EntityPool pool = new EntityPool(gaboto, snapshot);
-    Set<Entry<String, Object>> directProperties = activeParticipant.getAllDirectProperties().entrySet(); 
-    for (Entry<String, Object> entry : directProperties) {
-      if (entry.getKey().equals(prop.getURI())) {
-        if (entry.getValue() != null) {
-          if (entry.getValue() instanceof HashSet) { 
-            HashSet<Object> them = (HashSet<Object>)entry.getValue(); 
-            for (Object e : them) { 
-              if (e instanceof GabotoEntity) {
-                pool.add((GabotoEntity)e);
-              }
-            }
-          } else if (entry.getValue() instanceof GabotoEntity) { 
-            pool.add((GabotoEntity)entry.getValue());            
-          } else { 
-            System.err.println("Ignoring:" + entry.getKey());
-          }
-        } else { 
-          System.err.println("Ignoring:" + entry.getKey());
-        }
-      } else { 
-        System.err.println("Ignoring:" + entry.getKey());
-      }
-    }
-    return pool;
-  }
 
-  private EntityPool becomeOrAdd(EntityPool pool, EntityPool poolToAdd) {
-    if (poolToAdd == null)
-      throw new NullPointerException();
-    if (pool == null) {
-      return poolToAdd;
-    } else {
-      for (GabotoEntity e : poolToAdd.getEntities()) {
-        pool.addEntity(e);
-      }
-      return pool;
-    }
-  }
+		switch (query.getReturnType()) {
+		case META_TIMESTAMP:
+			try {
+				response.getWriter().write(new Long(startTime.getTimeInMillis()).toString());
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+			return;
+		case META_NEXT_ID:
+			try {
+				response.getWriter().write(new Long(snapshot.getGaboto().getCurrentHighestId() + 1).toString());
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+			return;
+		case META_TYPES:
+			output(snapshot.getGaboto().getConfig().getGabotoOntologyLookup().getRegisteredEntityClassesAsClassNames(), query, response);
+			return;
+		case ALL:
+			output(EntityPool.createFrom(snapshot), query, response);
+			return;
+		case INDIVIDUAL:
+			EntityPool pool = new EntityPool(gaboto, snapshot);
+			establishParticipantUri(query);
+			if (snapshot != null)
+				System.err.println("We have " + snapshot.size() + " entities in snapshot before loadEntity");
+			pool.addEntity(snapshot.loadEntity(query.getUri()));
+			output(pool, query, response);
+			return;
+		case TYPE_COLLECTION:
+			output(loadPoolWithEntitiesOfType(query.getType()), query, response);
+			return;
+		case PROPERTY_ANY: // value null
+			output(loadPoolWithEntitiesOfProperty(query.getRequestedProperty(), query.getRequestedPropertyValue()), query,
+					response);
+			return;
+		case PROPERTY_SUBJECT:
+			EntityPool subjectPool = null;
+			if (requiresResource(query.getRequestedProperty())) {
+				establishParticipantUri(query);
+				if (query.getUri() == null)
+					throw new ResourceNotFoundException("Resource not found with coding " + query.getParticipantCoding() + 
+							" and value " + query.getParticipantCode());
+				GabotoEntity object = snapshot.loadEntity(query.getUri());
+				EntityPool creationPool = EntityPool.createFrom(snapshot);
+				object.setCreatedFromPool(creationPool);
+				subjectPool = loadPoolWithActiveParticipants(object, query.getRequestedProperty()); 
+			} else { 
+				subjectPool = loadPoolWithEntitiesOfProperty(query.getRequestedProperty(), query.getRequestedPropertyValue());         
+			}
+			output(subjectPool, query, response);
+			return;
+		case PROPERTY_OBJECT: 
+			establishParticipantUri(query);
+			if (query.getUri() == null)
+				throw new ResourceNotFoundException("Resource not found with coding " + query.getParticipantCoding() + 
+						" and value " + query.getParticipantCode());
+			GabotoEntity subject = snapshot.loadEntity(query.getUri());
 
-  private Resource getResource(String v) {
-    String vUri = v;
-    if (!vUri.startsWith(config.getNSData()))
-        vUri = config.getNSData() + v;
-    try {
-      return snapshot.getResource(vUri);
-    } catch (ResourceDoesNotExistException e) {
-      throw new RuntimeException(e);
-    }
-  }
+			EntityPool objectPool = loadPoolWithPassiveParticipants(subject, query.getRequestedProperty());
+			output(objectPool, query, response);
+			return;
+		case NOT_FILTERED_TYPE_COLLECTION:
+			EntityPool p = loadPoolWithEntitiesOfType(query.getType());
+			EntityPool p2 = loadPoolWithEntitiesOfType(query.getType());
+			for (GabotoEntity e : p.getEntities()) 
+				if (e.getPropertyValue(query.getNotProperty(), query.getSearchPassive(), query.getSearchIndirect()) != null)
+					p2.removeEntity(e);
 
-  private boolean requiresResource(Property property) {
-	  if (property.getLocalName().endsWith("isPartOf")) {
-		  return true;
-	  } else if (property.getLocalName().endsWith("hasPrimaryPlace")) {
-		  return true;
-	  } else if (property.getLocalName().endsWith("occupies")) {
-		  return true;
-	  } else if (property.getLocalName().endsWith("associatedWith")) {
-		  return true;
-	  }
-	  return false;
-  }
+			output(p2, query,
+					response);
+			return;
+		case SPARQL_QUERY:
+			outputSparqlResults(response, snapshot, query.getSparqlQuery());
+			return;
+		default:
+			throw new RuntimeException("Fell through case with value " + query.getReturnType());
+		}
 
-  private EntityPool loadPoolWithEntitiesOfType(String type) {
-    String types[] = type.split("[|]");
+	}
 
-    EntityPoolConfiguration conf = new EntityPoolConfiguration(snapshot);
-    for (String t : types) {
-      if (!snapshot.getGaboto().getConfig().getGabotoOntologyLookup().isValidName(t))
-        throw new IllegalArgumentException("Found no URI matching type " + t);
-      String typeURI = snapshot.getGaboto().getConfig().getGabotoOntologyLookup().getURIForName(t);
-      conf.addAcceptedType(typeURI);
-    }
+	private void outputSparqlResults(HttpServletResponse response, GabotoSnapshot snapshot, String sparqlQuery) {
+		SPARQLQueryResultProcessor processor = new SPARQLQueryResultProcessor(); 
+		
+		snapshot.execSPARQLSelect(sparqlQuery, processor);
+		
+		try {
+			response.getWriter().write(processor.getOutput());
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		
+	}
 
-    return EntityPool.createFrom(conf);
-  }
+	private EntityPool loadPoolWithEntitiesOfProperty(Property prop, String value) {
+		if (prop == null)
+			throw new NullPointerException();
+		EntityPool pool = null;
+		if (value == null) {
+			pool = snapshot.loadEntitiesWithProperty(prop);
+		} else {
+			String values[] = value.split("[|]");
+			for (String v : values) {
+				if (requiresResource(prop)) {
+					Resource r = getResource(v);
+					pool = becomeOrAdd(pool, snapshot.loadEntitiesWithProperty(prop, r));
+				} else {
+					pool = becomeOrAdd(pool, snapshot.loadEntitiesWithProperty(prop, v));
+				}
+			}
+		}
+		return pool;
+	}
 
-  private void output(Collection<String> them, Query query, HttpServletResponse response) {
-    try {
-      if (query.getFormat().equals("txt")) {
-        boolean doneOne = false;
-        for (String member : them) {
-          if (doneOne)
-            response.getWriter().write("|");
-          response.getWriter().write(member);
-          doneOne = true;
-        }
-        response.getWriter().write("\n");
-      } else if (query.getFormat().equals("csv")) {
-        boolean doneOne = false;
-        for (String member : them) {
-          if (doneOne)
-            response.getWriter().write(",");
-          response.getWriter().write(member);
-          doneOne = true;
-        }
-        response.getWriter().write("\n");
-      } else if (query.getFormat().equals("js")) {
-        boolean doneOne = false;
-        response.getWriter().write("var oxpointsTypes = [");
-        for (String member : them) {
-          if (doneOne)
-            response.getWriter().write(",");
-          response.getWriter().write("'");
-          response.getWriter().write(member);
-          response.getWriter().write("'");
-          doneOne = true;
-        }
-        response.getWriter().write("];\n");
-      } else if (query.getFormat().equals("xml")) {
-        response.getWriter().write("<c>");
-        for (String member : them) {
-          response.getWriter().write("<i>");
-          response.getWriter().write(member);
-          response.getWriter().write("</i>");
-        }
-        response.getWriter().write("</c>");
-        response.getWriter().write("\n");
-      } else
-        throw new AnticipatedException("Unexpected format " + query.getFormat(), 400);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-  }
+	@SuppressWarnings("unchecked")
+	private EntityPool loadPoolWithActiveParticipants(GabotoEntity passiveParticipant, Property prop) { 
+		if (prop == null)
+			throw new NullPointerException();
+		EntityPool pool = new EntityPool(gaboto, snapshot);
+		//System.err.println("loadPoolWithActiveParticipants" + passiveParticipant.getUri() + "  prop " + prop + " which ");
+		Set<Entry<String, Object>> passiveProperties = passiveParticipant.getAllPassiveProperties().entrySet(); 
+		for (Entry<String, Object> entry : passiveProperties) {
+			if (entry.getKey().equals(prop.getURI())) {
+				if (entry.getValue() != null) {
+					if (entry.getValue() instanceof HashSet) { 
+						HashSet<Object> them = (HashSet<Object>)entry.getValue(); 
+						for (Object e : them) { 
+							if (e instanceof GabotoEntity) {
+								pool.add((GabotoEntity)e);
+							}
+						}
+					} else if (entry.getValue() instanceof GabotoEntity) { 
+						pool.add((GabotoEntity)entry.getValue());            
+					} else { 
+						System.err.println("Ignoring:" + entry.getKey());
+					}
+				} else { 
+					System.err.println("Ignoring:" + entry.getKey());
+				}
+			} else { 
+				System.err.println("Ignoring:" + entry.getKey());
+			}
+		}
+		return pool;
+	}
 
-  private void output(EntityPool pool, Query query, HttpServletResponse response) {
-      //System.err.println("Pool has " + pool.getSize() + " elements");
+	private void establishParticipantUri(Query query) throws ResourceNotFoundException { 
+		if (query.needsCodeLookup()) {
+			Property coding = Query.getPropertyFromAbbreviation(query.getParticipantCoding());
 
-    String output = "", format = query.getFormat();
-    if (query.getFormat().equals("kml")) {
-      output = createKml(pool, query);
-      response.setContentType("application/vnd.google-earth.kml+xml");
-    } else if (query.getFormat().equals("json") || query.getFormat().equals("js")) {
+			EntityPool objectPool = snapshot.loadEntitiesWithProperty(coding, query.getParticipantCode());
+			boolean found = false;
+			for (GabotoEntity objectKey: objectPool) { 
+				if (found)
+					throw new RuntimeException("Found two:" + objectKey);
+				query.setParticipantUri(objectKey.getUri());
+				found = true;
+			}
+		}
+		if (query.getParticipantUri() == null)
+			throw new ResourceNotFoundException("No resource found with coding " + query.getParticipantCoding() + 
+					" and value " + query.getParticipantCode());
+	}
+	@SuppressWarnings("unchecked")
+	private EntityPool loadPoolWithPassiveParticipants(GabotoEntity activeParticipant, Property prop) { 
+		if (prop == null)
+			throw new NullPointerException();
+		EntityPool pool = new EntityPool(gaboto, snapshot);
+		Set<Entry<String, Object>> directProperties = activeParticipant.getAllDirectProperties().entrySet(); 
+		for (Entry<String, Object> entry : directProperties) {
+			if (entry.getKey().equals(prop.getURI())) {
+				if (entry.getValue() != null) {
+					if (entry.getValue() instanceof HashSet) { 
+						HashSet<Object> them = (HashSet<Object>)entry.getValue(); 
+						for (Object e : them) { 
+							if (e instanceof GabotoEntity) {
+								pool.add((GabotoEntity)e);
+							}
+						}
+					} else if (entry.getValue() instanceof GabotoEntity) { 
+						pool.add((GabotoEntity)entry.getValue());            
+					} else { 
+						System.err.println("Ignoring:" + entry.getKey());
+					}
+				} else { 
+					System.err.println("Ignoring:" + entry.getKey());
+				}
+			} else { 
+				System.err.println("Ignoring:" + entry.getKey());
+			}
+		}
+		return pool;
+	}
 
-      JSONPoolTransformer transformer = new JSONPoolTransformer();
-      transformer.setNesting(query.getJsonDepth());
+	private EntityPool becomeOrAdd(EntityPool pool, EntityPool poolToAdd) {
+		if (poolToAdd == null)
+			throw new NullPointerException();
+		if (pool == null) {
+			return poolToAdd;
+		} else {
+			for (GabotoEntity e : poolToAdd.getEntities()) {
+				pool.addEntity(e);
+			}
+			return pool;
+		}
+	}
 
-      output = transformer.transform(pool);
-      if (query.getFormat().equals("js")) {
-        output = query.getJsCallback() + "(" + output + ");";
-      }
-      response.setContentType("text/javascript");
-    } else if (query.getFormat().equals("gjson")) {
-      GeoJSONPoolTransfomer transformer = new GeoJSONPoolTransfomer();
-      if (query.getArc() != null) {
-        transformer.addEntityFolderType(query.getFolderClassURI(), query.getArcProperty().getURI());
-      }
-      if (query.getOrderBy() != null) {
-        transformer.setOrderBy(query.getOrderByProperty().getURI());
-      }
-      transformer.setDisplayParentName(query.getDisplayParentName());
+	private Resource getResource(String v) {
+		String vUri = v;
+		if (!vUri.startsWith(config.getNSData()))
+			vUri = config.getNSData() + v;
+		try {
+			return snapshot.getResource(vUri);
+		} catch (ResourceDoesNotExistException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
-      output += transformer.transform(pool);
-      if (query.getJsCallback() != null)
-        output = query.getJsCallback() + "(" + output + ");";
-      response.setContentType("text/javascript");
-      
-    } else if (format.equals("xml") || format.equals("n3") || format.equals("ttl") || format.equals("nt")) {
-    	String outputFormat, contentType;
-    	if (format.equals("xml")) {
-    		outputFormat = GabotoQuery.FORMAT_RDF_XML_ABBREV;
-    		contentType = "application/rdf+xml";
-    	} else if (format.equals("ttl")) {
-    		outputFormat = GabotoQuery.FORMAT_RDF_TURTLE;
-    		contentType = "text/turtle";
-    	} else if (format.equals("nt")) {
-    		outputFormat = GabotoQuery.FORMAT_RDF_N_TRIPLE;
-    		contentType = "text/plain";
-    	} else {
-    		outputFormat = GabotoQuery.FORMAT_RDF_N3;
-    		contentType = "text/n3";
-    	}
-    	
-    	EntityPoolTransformer transformer;
-    	try {
-    		transformer = RDFPoolTransformerFactory.getRDFPoolTransformer(outputFormat);
-    		output = transformer.transform(pool);
-    	} catch (UnsupportedQueryFormatException e) {
-    		throw new IllegalArgumentException(e);
-    	}
-    	response.setContentType(contentType);
-    	
-    } else if (query.getFormat().equals("txt")) {
-      try { 
-        for (GabotoEntity entity: pool.getEntities()) { 
-          response.getWriter().write(entity.toString() + "\n");
-          for (Entry<String, Object> entry : entity.getAllDirectProperties().entrySet()) { 
-            if (entry.getValue() != null)
-              response.getWriter().write("  " + entry.getKey() + " : " + entry.getValue() + "\n");
-          }
-        }
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-      response.setContentType("text/plain");
-    } else {
-      output = runGPSBabel(createKml(pool, query), "kml", query.getFormat());
-      if (output.equals(""))
-        throw new RuntimeException("No output created by GPSBabel");
-    }
-    // System.err.println("output:" + output + ":");
-    try {
-      response.getWriter().write(output);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-  }
+	private boolean requiresResource(Property property) {
+		if (property.getLocalName().endsWith("isPartOf")) {
+			return true;
+		} else if (property.getLocalName().endsWith("hasPrimaryPlace")) {
+			return true;
+		} else if (property.getLocalName().endsWith("occupies")) {
+			return true;
+		} else if (property.getLocalName().endsWith("associatedWith")) {
+			return true;
+		}
+		return false;
+	}
 
-  private String createKml(EntityPool pool, Query query) {
-    String output;
-    KMLPoolTransformer transformer = new KMLPoolTransformer();
-    if (query.getArc() != null) {
-      transformer.addEntityFolderType(query.getFolderClassURI(), query.getArcProperty().getURI());
-    }
-    if (query.getOrderBy() != null) {
-      transformer.setOrderBy(query.getOrderByProperty().getURI());
-    }
-    transformer.setDisplayParentName(query.getDisplayParentName());
+	private EntityPool loadPoolWithEntitiesOfType(String type) {
+		String types[] = type.split("[|]");
 
-    output = transformer.transform(pool);
-    return output;
-  }
+		EntityPoolConfiguration conf = new EntityPoolConfiguration(snapshot);
+		for (String t : types) {
+			if (!snapshot.getGaboto().getConfig().getGabotoOntologyLookup().isValidName(t))
+				throw new IllegalArgumentException("Found no URI matching type " + t);
+			String typeURI = snapshot.getGaboto().getConfig().getGabotoOntologyLookup().getURIForName(t);
+			conf.addAcceptedType(typeURI);
+		}
 
-  /**
-   * @param input
-   *          A String, normally kml
-   * @param formatIn
-   *          format name, other than kml
-   * @param formatOut
-   *          what you want out
-   * @return the reformatted String
-   */
-  public static String runGPSBabel(String input, String formatIn, String formatOut) {
-    // '/usr/bin/gpsbabel -i kml -o ' . $format . ' -f ' . $In . ' -F ' . $Out;
-    if (formatIn == null)
-      formatIn = "kml";
-    if (formatOut == null)
-      throw new IllegalArgumentException("Missing output format for GPSBabel");
+		return EntityPool.createFrom(conf);
+	}
 
-    OutputStream stdin = null;
-    InputStream stderr = null;
-    InputStream stdout = null;
+	private void output(Collection<String> them, Query query, HttpServletResponse response) {
+		try {
+			if (query.getFormat().equals("txt")) {
+				boolean doneOne = false;
+				for (String member : them) {
+					if (doneOne)
+						response.getWriter().write("|");
+					response.getWriter().write(member);
+					doneOne = true;
+				}
+				response.getWriter().write("\n");
+			} else if (query.getFormat().equals("csv")) {
+				boolean doneOne = false;
+				for (String member : them) {
+					if (doneOne)
+						response.getWriter().write(",");
+					response.getWriter().write(member);
+					doneOne = true;
+				}
+				response.getWriter().write("\n");
+			} else if (query.getFormat().equals("js")) {
+				boolean doneOne = false;
+				response.getWriter().write("var oxpointsTypes = [");
+				for (String member : them) {
+					if (doneOne)
+						response.getWriter().write(",");
+					response.getWriter().write("'");
+					response.getWriter().write(member);
+					response.getWriter().write("'");
+					doneOne = true;
+				}
+				response.getWriter().write("];\n");
+			} else if (query.getFormat().equals("xml")) {
+				response.getWriter().write("<c>");
+				for (String member : them) {
+					response.getWriter().write("<i>");
+					response.getWriter().write(member);
+					response.getWriter().write("</i>");
+				}
+				response.getWriter().write("</c>");
+				response.getWriter().write("\n");
+			} else
+				throw new AnticipatedException("Unexpected format " + query.getFormat(), 400);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
-    String output = "";
-    String command = "/usr/bin/gpsbabel -i " + formatIn + " -o " + formatOut + " -f - -F -";
-    //System.err.println("GPSBabel command:" + command);
-    Process process;
-    try {
-      process = Runtime.getRuntime().exec(command, null, null);
-    } catch (IOException e) {
-    	throw new AnticipatedException("Not able to use GPSBabel to produce the desired output.", 501);
-    }
-    try {
-      stdin = process.getOutputStream();
+	private void output(EntityPool pool, Query query, HttpServletResponse response) {
+		//System.err.println("Pool has " + pool.getSize() + " elements");
 
-      stdout = process.getInputStream();
-      stderr = process.getErrorStream();
-      try {
-        stdin.write(input.getBytes());
-        stdin.flush();
-        stdin.close();
-      } catch (IOException e) {
-        // clean up if any output in stderr
-        BufferedReader errBufferedReader = new BufferedReader(new InputStreamReader(stderr));
-        String stderrString = "";
-        String stderrLine = null;
-        try {
-          while ((stderrLine = errBufferedReader.readLine()) != null) {
-            System.err.println("[Stderr Ex] " + stderrLine);
-            stderrString += stderrLine;
-          }
-          errBufferedReader.close();
-        } catch (IOException e2) {
-          throw new RuntimeException("Command " + command + " stderr reader failed:" + e2);
-        }
-        throw new RuntimeException("Command " + command + " gave error:\n" + stderrString);
-      }
+		String output = "", format = query.getFormat();
+		if (query.getFormat().equals("kml")) {
+			output = createKml(pool, query);
+			response.setContentType("application/vnd.google-earth.kml+xml");
+		} else if (query.getFormat().equals("json") || query.getFormat().equals("js")) {
 
-      BufferedReader brCleanUp = new BufferedReader(new InputStreamReader(stdout));
-      String line;
-      try {
-        while ((line = brCleanUp.readLine()) != null) {
-          System.out.println("[Stdout] " + line);
-          output += line;
-        }
-        brCleanUp.close();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
+			JSONPoolTransformer transformer = new JSONPoolTransformer();
+			transformer.setNesting(query.getJsonDepth());
 
-      // clean up if any output in stderr
-      brCleanUp = new BufferedReader(new InputStreamReader(stderr));
-      String stderrString = "";
-      try {
-        while ((line = brCleanUp.readLine()) != null) {
-          System.err.println("[Stderr] " + line);
-          stderrString += line;
-        }
-        brCleanUp.close();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-      if (!stderrString.equals(""))
-        throw new RuntimeException("Command " + command + " gave error:\n" + stderrString);
-    } finally {
-      process.destroy();
-    }
-    return output;
-  }
-  
-  public static String getGPSBabelVersion() {
-    if (gpsbabelVersion != null ) 
-      return gpsbabelVersion;
+			output = transformer.transform(pool);
+			if (query.getFormat().equals("js")) {
+				output = query.getJsCallback() + "(" + output + ");";
+			}
+			response.setContentType("text/javascript");
+		} else if (query.getFormat().equals("gjson")) {
+			GeoJSONPoolTransfomer transformer = new GeoJSONPoolTransfomer();
+			if (query.getArc() != null) {
+				transformer.addEntityFolderType(query.getFolderClassURI(), query.getArcProperty().getURI());
+			}
+			if (query.getOrderBy() != null) {
+				transformer.setOrderBy(query.getOrderByProperty().getURI());
+			}
+			transformer.setDisplayParentName(query.getDisplayParentName());
 
-    // '/usr/bin/gpsbabel -V
-    OutputStream stdin = null;
-    InputStream stderr = null;
-    InputStream stdout = null;
+			output += transformer.transform(pool);
+			if (query.getJsCallback() != null)
+				output = query.getJsCallback() + "(" + output + ");";
+			response.setContentType("text/javascript");
 
-    String output = "";
-    String command = "/usr/bin/gpsbabel -V";
-    //System.err.println("GPSBabel command:" + command);
-    Process process;
-    try {
-      process = Runtime.getRuntime().exec(command, null, null);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-    try {
-      stdin = process.getOutputStream();
+		} else if (format.equals("xml") || format.equals("n3") || format.equals("ttl") || format.equals("nt")) {
+			String outputFormat, contentType;
+			if (format.equals("xml")) {
+				outputFormat = GabotoQuery.FORMAT_RDF_XML_ABBREV;
+				contentType = "application/rdf+xml";
+			} else if (format.equals("ttl")) {
+				outputFormat = GabotoQuery.FORMAT_RDF_TURTLE;
+				contentType = "text/turtle";
+			} else if (format.equals("nt")) {
+				outputFormat = GabotoQuery.FORMAT_RDF_N_TRIPLE;
+				contentType = "text/plain";
+			} else {
+				outputFormat = GabotoQuery.FORMAT_RDF_N3;
+				contentType = "text/n3";
+			}
 
-      stdout = process.getInputStream();
-      stderr = process.getErrorStream();
-      stdin.flush();
-      stdin.close();
+			EntityPoolTransformer transformer;
+			try {
+				transformer = RDFPoolTransformerFactory.getRDFPoolTransformer(outputFormat);
+				output = transformer.transform(pool);
+			} catch (UnsupportedQueryFormatException e) {
+				throw new IllegalArgumentException(e);
+			}
+			response.setContentType(contentType);
 
-      BufferedReader brCleanUp = new BufferedReader(new InputStreamReader(stdout));
-      String line;
-      try {
-        while ((line = brCleanUp.readLine()) != null) {
-          System.out.println("[Stdout] " + line);
-          output += line;
-        }
-        brCleanUp.close();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
+		} else if (query.getFormat().equals("txt")) {
+			try { 
+				for (GabotoEntity entity: pool.getEntities()) { 
+					response.getWriter().write(entity.toString() + "\n");
+					for (Entry<String, Object> entry : entity.getAllDirectProperties().entrySet()) { 
+						if (entry.getValue() != null)
+							response.getWriter().write("  " + entry.getKey() + " : " + entry.getValue() + "\n");
+					}
+				}
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+			response.setContentType("text/plain");
+		} else {
+			output = runGPSBabel(createKml(pool, query), "kml", query.getFormat());
+			if (output.equals(""))
+				throw new RuntimeException("No output created by GPSBabel");
+		}
+		// System.err.println("output:" + output + ":");
+		try {
+			response.getWriter().write(output);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
-      // clean up if any output in stderr
-      brCleanUp = new BufferedReader(new InputStreamReader(stderr));
-      String stderrString = "";
-      try {
-        while ((line = brCleanUp.readLine()) != null) {
-          System.err.println("[Stderr] " + line);
-          stderrString += line;
-        }
-        brCleanUp.close();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-      if (!stderrString.equals(""))
-        throw new RuntimeException("Command " + command + " gave error:\n" + stderrString);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    } finally {
-      process.destroy();
-    }
-    //GPSBabel Version 1.3.6
-    gpsbabelVersion =  output.substring("GPSBabel Version ".length());
-    return gpsbabelVersion;
-  }
+	private String createKml(EntityPool pool, Query query) {
+		String output;
+		KMLPoolTransformer transformer = new KMLPoolTransformer();
+		if (query.getArc() != null) {
+			transformer.addEntityFolderType(query.getFolderClassURI(), query.getArcProperty().getURI());
+		}
+		if (query.getOrderBy() != null) {
+			transformer.setOrderBy(query.getOrderByProperty().getURI());
+		}
+		transformer.setDisplayParentName(query.getDisplayParentName());
+
+		output = transformer.transform(pool);
+		return output;
+	}
+
+	/**
+	 * @param input
+	 *          A String, normally kml
+	 * @param formatIn
+	 *          format name, other than kml
+	 * @param formatOut
+	 *          what you want out
+	 * @return the reformatted String
+	 */
+	public static String runGPSBabel(String input, String formatIn, String formatOut) {
+		// '/usr/bin/gpsbabel -i kml -o ' . $format . ' -f ' . $In . ' -F ' . $Out;
+		if (formatIn == null)
+			formatIn = "kml";
+		if (formatOut == null)
+			throw new IllegalArgumentException("Missing output format for GPSBabel");
+
+		OutputStream stdin = null;
+		InputStream stderr = null;
+		InputStream stdout = null;
+
+		String output = "";
+		String command = "/usr/bin/gpsbabel -i " + formatIn + " -o " + formatOut + " -f - -F -";
+		//System.err.println("GPSBabel command:" + command);
+		Process process;
+		try {
+			process = Runtime.getRuntime().exec(command, null, null);
+		} catch (IOException e) {
+			throw new AnticipatedException("Not able to use GPSBabel to produce the desired output.", 501);
+		}
+		try {
+			stdin = process.getOutputStream();
+
+			stdout = process.getInputStream();
+			stderr = process.getErrorStream();
+			try {
+				stdin.write(input.getBytes());
+				stdin.flush();
+				stdin.close();
+			} catch (IOException e) {
+				// clean up if any output in stderr
+				BufferedReader errBufferedReader = new BufferedReader(new InputStreamReader(stderr));
+				String stderrString = "";
+				String stderrLine = null;
+				try {
+					while ((stderrLine = errBufferedReader.readLine()) != null) {
+						System.err.println("[Stderr Ex] " + stderrLine);
+						stderrString += stderrLine;
+					}
+					errBufferedReader.close();
+				} catch (IOException e2) {
+					throw new RuntimeException("Command " + command + " stderr reader failed:" + e2);
+				}
+				throw new RuntimeException("Command " + command + " gave error:\n" + stderrString);
+			}
+
+			BufferedReader brCleanUp = new BufferedReader(new InputStreamReader(stdout));
+			String line;
+			try {
+				while ((line = brCleanUp.readLine()) != null) {
+					System.out.println("[Stdout] " + line);
+					output += line;
+				}
+				brCleanUp.close();
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+
+			// clean up if any output in stderr
+			brCleanUp = new BufferedReader(new InputStreamReader(stderr));
+			String stderrString = "";
+			try {
+				while ((line = brCleanUp.readLine()) != null) {
+					System.err.println("[Stderr] " + line);
+					stderrString += line;
+				}
+				brCleanUp.close();
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+			if (!stderrString.equals(""))
+				throw new RuntimeException("Command " + command + " gave error:\n" + stderrString);
+		} finally {
+			process.destroy();
+		}
+		return output;
+	}
+
+	public static String getGPSBabelVersion() {
+		if (gpsbabelVersion != null ) 
+			return gpsbabelVersion;
+
+		// '/usr/bin/gpsbabel -V
+		OutputStream stdin = null;
+		InputStream stderr = null;
+		InputStream stdout = null;
+
+		String output = "";
+		String command = "/usr/bin/gpsbabel -V";
+		//System.err.println("GPSBabel command:" + command);
+		Process process;
+		try {
+			process = Runtime.getRuntime().exec(command, null, null);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		try {
+			stdin = process.getOutputStream();
+
+			stdout = process.getInputStream();
+			stderr = process.getErrorStream();
+			stdin.flush();
+			stdin.close();
+
+			BufferedReader brCleanUp = new BufferedReader(new InputStreamReader(stdout));
+			String line;
+			try {
+				while ((line = brCleanUp.readLine()) != null) {
+					System.out.println("[Stdout] " + line);
+					output += line;
+				}
+				brCleanUp.close();
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+
+			// clean up if any output in stderr
+			brCleanUp = new BufferedReader(new InputStreamReader(stderr));
+			String stderrString = "";
+			try {
+				while ((line = brCleanUp.readLine()) != null) {
+					System.err.println("[Stderr] " + line);
+					stderrString += line;
+				}
+				brCleanUp.close();
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+			if (!stderrString.equals(""))
+				throw new RuntimeException("Command " + command + " gave error:\n" + stderrString);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		} finally {
+			process.destroy();
+		}
+		//GPSBabel Version 1.3.6
+		gpsbabelVersion =  output.substring("GPSBabel Version ".length());
+		return gpsbabelVersion;
+	}
+
 
 }

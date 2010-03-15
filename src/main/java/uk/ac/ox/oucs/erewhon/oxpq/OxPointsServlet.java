@@ -25,7 +25,7 @@ public abstract class OxPointsServlet extends HttpServlet {
   protected static Calendar startTime = null;
 
   protected Gaboto gaboto = null;
-  protected GabotoSnapshot snapshot = null;
+	protected GabotoSnapshot snapshot = null;
   protected String dataDirectory = null; 
   
   public OxPointsServlet() {

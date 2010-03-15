@@ -33,12 +33,14 @@
 package uk.ac.ox.oucs.erewhon.oxpq;
 
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
 import javax.servlet.http.HttpServletRequest;
 
 import net.sf.gaboto.time.TimeInstant;
+import net.sf.gaboto.vocabulary.DCTermsVocab;
 import net.sf.gaboto.vocabulary.DCVocab;
 import net.sf.gaboto.vocabulary.GabotoKMLVocab;
 import net.sf.gaboto.vocabulary.GabotoVocab;
@@ -100,6 +102,21 @@ public final class Query {
     namespacePrefixes.put("4geo:",   GeoVocab.NS);
   }
 
+  private static Map<String,Property> propertyMapping = getPropertyMapping();
+  
+  private static Map<String,Property> getPropertyMapping() {
+	  Map<String,Property> map = new HashMap<String,Property>();
+	  
+	  map.put("isPartOf", DCTermsVocab.isPartOf);
+	  map.put("occupies", OxPointsVocab.occupies);
+	  map.put("hasOUCSCode", OxPointsVocab.hasOUCSCode);
+	  map.put("hasOLISCode", OxPointsVocab.hasOLISCode);
+	  map.put("hasOBNCode", OxPointsVocab.hasOBNCode);
+	  map.put("hasPrimaryPlace", OxPointsVocab.hasPrimaryPlace);
+	  
+	  return map;
+  }
+  
   private Query() {}
   
   /**
@@ -152,7 +169,7 @@ public final class Query {
     } else if (startsWithPropertyName(resultsetSpec)) {
       q.requestedPropertyName = getPropertyName(resultsetSpec); 
       q.requestedPropertyValue = getPropertyValue(resultsetSpec); 
-      q.requestedProperty = getPropertyFromAbreviation(q.requestedPropertyName);
+      q.requestedProperty = getPropertyFromAbbreviation(q.requestedPropertyName);
       q.returnType = ReturnType.PROPERTY_ANY;
     } else
       throw new AnticipatedException("Unexpected path info " + pathInfo, 400);
@@ -164,14 +181,14 @@ public final class Query {
 
       //System.err.println("Param:" + pName + "=" + pValue);
       if (pName.equals("arc")) {
-        q.arcProperty = getPropertyFromAbreviation(pValue);
+        q.arcProperty = getPropertyFromAbbreviation(pValue);
         if (q.arcProperty != null)
           q.arc = pValue;
         else 
           throw new AnticipatedException("Unrecognised arc property name " + pValue, 400);
       } else if (pName.equals("not")) {
         q.returnType = ReturnType.NOT_FILTERED_TYPE_COLLECTION;
-        q.notProperty = getPropertyFromAbreviation(pValue);
+        q.notProperty = getPropertyFromAbbreviation(pValue);
         if (q.notProperty == null)
           throw new AnticipatedException("Unrecognised not property name " + pValue, 400);
       } else if (pName.equals("folderType")) { 
@@ -191,7 +208,7 @@ public final class Query {
         q.requestedPropertyValue = pValue;
         */
       else if (pName.equals("orderBy")) {
-        q.orderByProperty = getPropertyFromAbreviation(pValue); 
+        q.orderByProperty = getPropertyFromAbbreviation(pValue); 
         if (q.orderByProperty != null)
           q.orderBy = pValue;
         else 
@@ -286,7 +303,7 @@ public final class Query {
       case 0: 
         return false;
       case 1: 
-        q.requestedProperty = getPropertyFromAbreviation(tokens[0]);
+        q.requestedProperty = getPropertyFromAbbreviation(tokens[0]);
         if (q.requestedProperty != null) {
           q.requestedPropertyName = tokens[0];
           q.returnType = ReturnType.PROPERTY_ANY;
@@ -297,7 +314,7 @@ public final class Query {
         } else
           return false;
       case 2: 
-        q.requestedProperty = getPropertyFromAbreviation(tokens[0]);
+        q.requestedProperty = getPropertyFromAbbreviation(tokens[0]);
         if (q.requestedProperty != null) {
           q.requestedPropertyName = tokens[0];
           if (isAnEntitySpec(tokens[1],q)) {
@@ -306,7 +323,7 @@ public final class Query {
           } else
             return false;
         } else if (isAnEntitySpec(tokens[0],q)) {
-          q.requestedProperty = getPropertyFromAbreviation(tokens[1]);
+          q.requestedProperty = getPropertyFromAbbreviation(tokens[1]);
           if (q.requestedProperty != null) {
             q.requestedPropertyName = tokens[1];
             q.returnType = ReturnType.PROPERTY_OBJECT; // subj prop _
@@ -360,13 +377,13 @@ public final class Query {
   public 
   Property getProperty(String pathInfo) { 
     String[] tokens = getTokens(pathInfo);
-    return getPropertyFromAbreviation(tokens[0]); 
+    return getPropertyFromAbbreviation(tokens[0]); 
   }
   private static 
   String getPropertyName(String pathInfo) {
     String[] tokens = getTokens(pathInfo);
     //System.err.println("Token:" + tokens[0]);
-    if (getPropertyFromAbreviation(tokens[0]) != null)
+    if (getPropertyFromAbbreviation(tokens[0]) != null)
       return tokens[0];
     else 
       return null;
@@ -399,14 +416,11 @@ public final class Query {
 
 
   public static 
-  Property getPropertyFromAbreviation(String propertyAbreviation) {
-    for (String prefix : namespacePrefixes.keySet()) {
-      String key = namespacePrefixes.get(prefix) + propertyAbreviation;
-      Property p = getPropertyNamed(key);
-      if (p != null)
-        return p; 
-    }
-    return null;
+  Property getPropertyFromAbbreviation(String propertyAbbreviation) {
+	  if (propertyMapping.containsKey(propertyAbbreviation))
+		  return propertyMapping.get(propertyAbbreviation);
+	  else
+		  return null;
   }
 
   static String getValidClassURI(String className) { 
@@ -438,50 +452,6 @@ public final class Query {
       return true;
     return false;
   }
-  public static 
-  Property getPropertyNamed(String pName) { 
-    if (OxPointsVocab.MODEL.getObjectProperty(pName) != null)
-      return OxPointsVocab.MODEL.getObjectProperty(pName);
-    if (VCard.MODEL.getObjectProperty(pName) != null)
-      return VCard.MODEL.getObjectProperty(pName);    
-    if (GabotoVocab.MODEL.getObjectProperty(pName) != null)
-      return GabotoVocab.MODEL.getObjectProperty(pName);
-    if (GabotoKMLVocab.MODEL.getObjectProperty(pName) != null)
-      return GabotoKMLVocab.MODEL.getObjectProperty(pName);    
-    if (GeoVocab.MODEL.getObjectProperty(pName) != null)
-      return GeoVocab.MODEL.getObjectProperty(pName);    
-    if (DCVocab.MODEL.getObjectProperty(pName) != null)
-      return DCVocab.MODEL.getObjectProperty(pName);    
-    if (RDFContext.MODEL.getObjectProperty(pName) != null)
-      return RDFContext.MODEL.getObjectProperty(pName);    
-    if (RDFGraph.MODEL.getObjectProperty(pName) != null)
-      return RDFGraph.MODEL.getObjectProperty(pName);    
-    if (TimeVocab.MODEL.getObjectProperty(pName) != null)
-      return TimeVocab.MODEL.getObjectProperty(pName);    
-
-    if (OxPointsVocab.MODEL.getAnnotationProperty(pName) != null)
-      return OxPointsVocab.MODEL.getAnnotationProperty(pName);
-    if (VCard.MODEL.getAnnotationProperty(pName) != null)
-      return VCard.MODEL.getAnnotationProperty(pName);    
-    if (GabotoVocab.MODEL.getAnnotationProperty(pName) != null)
-      return GabotoVocab.MODEL.getAnnotationProperty(pName);
-    if (GabotoKMLVocab.MODEL.getAnnotationProperty(pName) != null)
-      return GabotoKMLVocab.MODEL.getAnnotationProperty(pName);    
-    if (GeoVocab.MODEL.getAnnotationProperty(pName) != null)
-      return GeoVocab.MODEL.getAnnotationProperty(pName);    
-    if (DCVocab.MODEL.getAnnotationProperty(pName) != null)
-      return DCVocab.MODEL.getAnnotationProperty(pName);    
-    if (RDFContext.MODEL.getAnnotationProperty(pName) != null)
-      return RDFContext.MODEL.getAnnotationProperty(pName);    
-    if (RDFGraph.MODEL.getAnnotationProperty(pName) != null)
-      return RDFGraph.MODEL.getAnnotationProperty(pName);    
-    if (TimeVocab.MODEL.getAnnotationProperty(pName) != null)
-      return TimeVocab.MODEL.getAnnotationProperty(pName);    
-    return null;
-  }
-  static boolean isValidPropertyName(String pName) { 
-    return getPropertyNamed(pName) != null;
- }
 
   public String getParticipantCoding() {
     return participantCoding;

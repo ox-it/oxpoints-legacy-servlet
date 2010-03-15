@@ -253,7 +253,7 @@ public class OxPointsQueryServlet extends OxPointsServlet {
 
   private void establishParticipantUri(Query query) throws ResourceNotFoundException { 
     if (query.needsCodeLookup()) {
-      Property coding = Query.getPropertyFromAbreviation(query.getParticipantCoding());
+      Property coding = Query.getPropertyFromAbbreviation(query.getParticipantCoding());
       
       EntityPool objectPool = snapshot.loadEntitiesWithProperty(coding, query.getParticipantCode());
       boolean found = false;
@@ -324,18 +324,16 @@ public class OxPointsQueryServlet extends OxPointsServlet {
   }
 
   private boolean requiresResource(Property property) {
-    if (property.getLocalName().endsWith("subsetOf")) {
-      return true;
-    } else if (property.getLocalName().endsWith("physicallyContainedWithin")) {
-      return true;
-    } else if (property.getLocalName().endsWith("hasPrimaryPlace")) {
-      return true;
-    } else if (property.getLocalName().endsWith("occupies")) {
-      return true;
-    } else if (property.getLocalName().endsWith("associatedWith")) {
-      return true;
-    }
-    return false;
+	  if (property.getLocalName().endsWith("isPartOf")) {
+		  return true;
+	  } else if (property.getLocalName().endsWith("hasPrimaryPlace")) {
+		  return true;
+	  } else if (property.getLocalName().endsWith("occupies")) {
+		  return true;
+	  } else if (property.getLocalName().endsWith("associatedWith")) {
+		  return true;
+	  }
+	  return false;
   }
 
   private EntityPool loadPoolWithEntitiesOfType(String type) {
@@ -345,7 +343,7 @@ public class OxPointsQueryServlet extends OxPointsServlet {
     for (String t : types) {
       if (!snapshot.getGaboto().getConfig().getGabotoOntologyLookup().isValidName(t))
         throw new IllegalArgumentException("Found no URI matching type " + t);
-      String typeURI = OxPointsVocab.NS + t;
+      String typeURI = snapshot.getGaboto().getConfig().getGabotoOntologyLookup().getURIForName(t);
       conf.addAcceptedType(typeURI);
     }
 

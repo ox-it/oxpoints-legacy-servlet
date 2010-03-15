@@ -203,12 +203,9 @@ public class OxPointsQueryServlet extends OxPointsServlet {
 	}
 
 	private void outputSparqlResults(HttpServletResponse response, GabotoSnapshot snapshot, String sparqlQuery) {
-		SPARQLQueryResultProcessor processor = new SPARQLQueryResultProcessor(); 
-		
-		snapshot.execSPARQLSelect(sparqlQuery, processor);
 		
 		try {
-			response.getWriter().write(processor.getOutput());
+			response.getWriter().write(SPARQLQueryResultProcessor.performQuery(snapshot.getModel(), sparqlQuery));
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}

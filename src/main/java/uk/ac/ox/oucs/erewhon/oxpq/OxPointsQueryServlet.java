@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -43,6 +44,10 @@ import java.util.Map.Entry;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.lang.StringEscapeUtils;
+
+import uk.ac.ox.oucs.oxpoints.gaboto.entities.OxpEntity;
 
 import net.sf.gaboto.EntityDoesNotExistException;
 import net.sf.gaboto.GabotoFactory;
@@ -442,6 +447,37 @@ public class OxPointsQueryServlet extends OxPointsServlet {
 			if (query.getJsCallback() != null)
 				output = query.getJsCallback() + "(" + output + ");";
 			response.setContentType("text/javascript");
+
+		} else if (query.getFormat().equals("autosuggest")) {
+			PrintWriter writer;
+			boolean first = true;
+			try {
+				writer = response.getWriter();
+			} catch (IOException e) {
+				throw new RuntimeException("Couldn't write to output stream.");
+			}
+			if (query.getJsCallback() != null)
+				writer.print(query.getJsCallback()+'(');
+			writer.print("{ items: [");
+			for (GabotoEntity entity : pool.getEntities()) {
+				if (((OxpEntity) entity).getName() == null)
+					continue;
+				if (!first) {
+					writer.print(",");
+				} else
+					first = false;
+				writer.print("\n  { id: \"");
+				writer.print(entity.getUri().substring(entity.getUri().lastIndexOf("/")+1));
+				writer.print("\", name: \"");
+				writer.print(StringEscapeUtils.escapeJavaScript(((OxpEntity) entity).getName())+"\"}");
+			}
+			if (query.getJsCallback() != null)
+				writer.println("\n]});");
+			else
+				writer.println("\n]}");
+			response.setContentType("text/javascript");
+			
+			
 
 		} else if (format.equals("xml") || format.equals("n3") || format.equals("ttl") || format.equals("nt")) {
 			String outputFormat, contentType;

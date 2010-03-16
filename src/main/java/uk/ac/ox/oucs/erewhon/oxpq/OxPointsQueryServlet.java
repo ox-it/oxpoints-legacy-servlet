@@ -65,6 +65,7 @@ import net.sf.gaboto.transformation.JSONPoolTransformer;
 import net.sf.gaboto.transformation.KMLPoolTransformer;
 import net.sf.gaboto.transformation.RDFPoolTransformerFactory;
 
+import com.hp.hpl.jena.query.QueryParseException;
 import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.Resource;
 
@@ -199,7 +200,47 @@ public class OxPointsQueryServlet extends OxPointsServlet {
 					response);
 			return;
 		case SPARQL_QUERY:
-			outputSparqlResults(response, snapshot, query.getSparqlQuery());
+			PrintWriter writer;
+			try {
+				writer = response.getWriter();
+			} catch (IOException e1) {
+				throw new RuntimeException("Couldn't write to stream");
+			}
+			
+			if (query.getFormat().equals("html") || query.getSparqlQuery() == null) {
+				writer.println("<!DOCTYPE HTML>\n<html>\n  <head>");
+				writer.println("    <title>OxPoints SPARQL Endpoint</title>\n    </title>\n  </head>");
+				writer.println("  <body>\n    <h1>OxPoints SPARQL Endpoint</h1>");
+				if (query.getSparqlQuery() != null) {
+					writer.println("    <h2>Results</h2>");
+					writer.print("    <div class=\"results\" style=\"border:1px solid #888; padding:5px; font-size:10pt; max-height:400px; overflow:auto;\"><pre style=\"margin:0;\">");
+					try {
+						writer.write(StringEscapeUtils.escapeHtml(SPARQLQueryResultProcessor.performQuery(snapshot.getModel(), query.getSparqlQuery())));
+					} catch (QueryParseException e) {
+						writer.write("ERROR: " + e.getMessage());
+						response.setStatus(400);
+					}
+					writer.println("</pre></div>");
+				}
+				writer.println("    <h2>Query</h2>");
+				String sparqlQuery = (query.getSparqlQuery() != null) ? query.getSparqlQuery() :
+					"PREFIX oxp: <http://ns.ox.ac.uk/namespace/oxpoints/2009/02/owl#>\n"
+				  + "PREFIX foaf: <http://xmlns.com/foaf/0.1/>\n"
+				  + "PREFIX dc: <http://purl.org/dc/elements/1.1/>\n\n"
+				  + "SELECT ?title ?homepage WHERE {\n"
+				  + "    ?college a oxp:College ;\n"
+				  + "             dc:title ?title ;\n"
+				  + "             foaf:homepage ?homepage\n"
+				  + "} LIMIT 10\n";
+				writer.println("    <form method=\"GET\" action=\"sparql.html\">");
+				writer.println("      <textarea name=\"query\" rows=\"10\" cols=\"80\">"+StringEscapeUtils.escapeHtml(sparqlQuery)+"</textarea>");
+				writer.println("      <p><input type=\"submit\"/></p>");
+				writer.println("    </form>\n  </body>\n</html>");
+				
+			} else
+				outputSparqlResults(response, writer, snapshot, query.getSparqlQuery());
+
+				
 			return;
 		default:
 			throw new RuntimeException("Fell through case with value " + query.getReturnType());
@@ -207,14 +248,18 @@ public class OxPointsQueryServlet extends OxPointsServlet {
 
 	}
 
-	private void outputSparqlResults(HttpServletResponse response, GabotoSnapshot snapshot, String sparqlQuery) {
-		
+	private void outputSparqlResults(HttpServletResponse response, PrintWriter writer, GabotoSnapshot snapshot, String sparqlQuery) {
 		try {
-			response.getWriter().write(SPARQLQueryResultProcessor.performQuery(snapshot.getModel(), sparqlQuery));
-		} catch (IOException e) {
-			throw new RuntimeException(e);
+			writer.write(SPARQLQueryResultProcessor.performQuery(snapshot.getModel(), sparqlQuery));
+			if (response != null)
+				response.setContentType("text/xml");
+		} catch (QueryParseException e) {
+			writer.write(e.getMessage());
+			if (response != null) {
+				response.setStatus(400);
+				response.setContentType("text/plain");
+			}
 		}
-		
 	}
 
 	private EntityPool loadPoolWithEntitiesOfProperty(Property prop, String value) {

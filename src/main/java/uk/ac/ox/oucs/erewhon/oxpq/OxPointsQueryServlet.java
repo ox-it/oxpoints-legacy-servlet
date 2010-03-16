@@ -208,8 +208,10 @@ public class OxPointsQueryServlet extends OxPointsServlet {
 			}
 			
 			if (query.getFormat().equals("html") || query.getSparqlQuery() == null) {
-				writer.println("<!DOCTYPE HTML>\n<html>\n  <head>");
-				writer.println("    <title>OxPoints SPARQL Endpoint</title>\n    </title>\n  </head>");
+				writer.println("<?xml version=\"1.0\"?>");
+				writer.println("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">");
+				writer.println("<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\">\n  <head>");
+				writer.println("    <title>OxPoints SPARQL Endpoint</title>\n  </head>");
 				writer.println("  <body>\n    <h1>OxPoints SPARQL Endpoint</h1>");
 				if (query.getSparqlQuery() != null) {
 					writer.println("    <h2>Results</h2>");
@@ -236,6 +238,7 @@ public class OxPointsQueryServlet extends OxPointsServlet {
 				writer.println("      <textarea name=\"query\" rows=\"10\" cols=\"80\">"+StringEscapeUtils.escapeHtml(sparqlQuery)+"</textarea>");
 				writer.println("      <p><input type=\"submit\"/></p>");
 				writer.println("    </form>\n  </body>\n</html>");
+				response.setContentType("application/xhtml+xml");
 				
 			} else
 				outputSparqlResults(response, writer, snapshot, query.getSparqlQuery());

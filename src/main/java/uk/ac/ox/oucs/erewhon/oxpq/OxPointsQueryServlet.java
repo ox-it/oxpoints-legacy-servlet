@@ -38,7 +38,11 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
 
@@ -47,7 +51,10 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang.StringEscapeUtils;
 
+import uk.ac.ox.oucs.oxpoints.gaboto.entities.Organization;
 import uk.ac.ox.oucs.oxpoints.gaboto.entities.OxpEntity;
+import uk.ac.ox.oucs.oxpoints.gaboto.entities.Place;
+import uk.ac.ox.oucs.oxpoints.gaboto.entities.Room;
 
 import net.sf.gaboto.EntityDoesNotExistException;
 import net.sf.gaboto.GabotoFactory;
@@ -497,6 +504,36 @@ public class OxPointsQueryServlet extends OxPointsServlet {
 			response.setContentType("text/javascript");
 
 		} else if (query.getFormat().equals("autosuggest")) {
+			Map<String,List<OxpEntity>> places = new HashMap<String,List<OxpEntity>>();
+			Set<OxpEntity> entities = new HashSet<OxpEntity>();
+			for (GabotoEntity entity : pool.getEntities()) {
+				String name = ((OxpEntity) entity).getName();
+				if (name == null)
+					continue;
+				if (!places.containsKey(name))
+					places.put(name, new LinkedList<OxpEntity>());
+				places.get(name).add((OxpEntity) entity);
+			}
+			for (List<OxpEntity> entitiesByName : places.values()) {
+				Set<OxpEntity> toRemove = new HashSet<OxpEntity>();
+				for (int i=0; i < entitiesByName.size(); i++) {
+					if (!(entitiesByName.get(i) instanceof Organization))
+						continue;
+				    Organization org = (Organization) entitiesByName.get(i);
+					for (int j=0; j < entitiesByName.size(); j++) { 
+						if (!(entitiesByName.get(j) instanceof Place))
+							continue;
+						Place place = (Place) entitiesByName.get(j);
+						if (org.getOccupiedPlaces() != null && org.getOccupiedPlaces().contains(place))
+							toRemove.add(org);
+					}
+				}
+				for (OxpEntity entity : entitiesByName)
+					if (!toRemove.contains(entity))
+						entities.add(entity);
+			}
+			
+			
 			PrintWriter writer;
 			boolean first = true;
 			try {
@@ -507,9 +544,8 @@ public class OxPointsQueryServlet extends OxPointsServlet {
 			if (query.getJsCallback() != null)
 				writer.print(query.getJsCallback()+'(');
 			writer.print("{ items: [");
-			for (GabotoEntity entity : pool.getEntities()) {
-				if (((OxpEntity) entity).getName() == null)
-					continue;
+			
+			for (OxpEntity entity : entities) {
 				if (!first) {
 					writer.print(",");
 				} else
@@ -517,7 +553,12 @@ public class OxPointsQueryServlet extends OxPointsServlet {
 				writer.print("\n  { id: \"");
 				writer.print(entity.getUri().substring(entity.getUri().lastIndexOf("/")+1));
 				writer.print("\", name: \"");
-				writer.print(StringEscapeUtils.escapeJavaScript(((OxpEntity) entity).getName())+"\"}");
+				String name;
+				if (entity instanceof Place)
+					name = ((Place) entity).getFullyQualifiedTitle();
+				else
+					name = ((OxpEntity) entity).getName();
+				writer.print(StringEscapeUtils.escapeJavaScript(name)+"\"}");
 			}
 			if (query.getJsCallback() != null)
 				writer.println("\n]});");

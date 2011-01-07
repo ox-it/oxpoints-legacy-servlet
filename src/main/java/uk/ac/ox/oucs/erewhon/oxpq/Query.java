@@ -119,7 +119,7 @@ public final class Query {
 		map.put("hasOLISCode", OxPointsVocab.hasOLISCode);
 		map.put("hasOBNCode", OxPointsVocab.hasOBNCode);
 		map.put("hasFinanceCode", OxPointsVocab.hasFinanceCode);
-		map.put("hasPrimaryPlace", OxPointsVocab.hasPrimaryPlace);
+		map.put("primaryPlace", OxPointsVocab.primaryPlace);
 		map.put("title", DCVocab.title);
 		map.put("hasITHomepage", OxPointsVocab.hasITHomepage);
 		map.put("hasWeblearn", OxPointsVocab.hasWeblearn);

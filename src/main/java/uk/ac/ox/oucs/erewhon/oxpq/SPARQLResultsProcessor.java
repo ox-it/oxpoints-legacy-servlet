@@ -12,6 +12,7 @@ import com.hp.hpl.jena.rdf.model.Literal;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 
+
 class SPARQLQueryResultProcessor {
 
 	public static String performQuery(Model model, String query) {

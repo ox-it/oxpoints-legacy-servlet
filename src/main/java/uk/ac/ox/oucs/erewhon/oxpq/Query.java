@@ -118,6 +118,7 @@ public final class Query {
 	  map.put("hasOUCSCode", OxPointsVocab.hasOUCSCode);
 	  map.put("hasOLISCode", OxPointsVocab.hasOLISCode);
 	  map.put("hasOBNCode", OxPointsVocab.hasOBNCode);
+	  map.put("hasFinanceCode", OxPointsVocab.hasFinanceCode);
 	  map.put("hasPrimaryPlace", OxPointsVocab.hasPrimaryPlace);
 	  map.put("title", DCVocab.title);
 	  map.put("hasITHomepage", OxPointsVocab.hasITHomepage);
@@ -381,11 +382,16 @@ public final class Query {
       q.participantCode = it.substring(5);
       return true;
     } else if (it.startsWith("obn:")) {
-      q.needsCodeLookup = true;
-      q.participantCoding = "hasOBNCode";
-      q.participantCode = it.substring(4);
-      return true;
-    } else if (it.startsWith("id:")) {
+        q.needsCodeLookup = true;
+        q.participantCoding = "hasOBNCode";
+        q.participantCode = it.substring(4);
+        return true;
+    } else if (it.startsWith("finance:")) {
+        q.needsCodeLookup = true;
+        q.participantCoding = "hasFinanceCode";
+        q.participantCode = it.substring(8);
+        return true;
+      } else if (it.startsWith("id:")) {
       q.requestedPropertyValue = it.substring(3); 
       q.setParticipantId(q.requestedPropertyValue);
       q.participantUri = ENTITY_PREFIX + q.participantId;

@@ -54,7 +54,6 @@ import org.apache.commons.lang.StringEscapeUtils;
 import uk.ac.ox.oucs.oxpoints.gaboto.entities.Organization;
 import uk.ac.ox.oucs.oxpoints.gaboto.entities.OxpEntity;
 import uk.ac.ox.oucs.oxpoints.gaboto.entities.Place;
-import uk.ac.ox.oucs.oxpoints.gaboto.entities.Room;
 
 import net.sf.gaboto.EntityDoesNotExistException;
 import net.sf.gaboto.GabotoFactory;

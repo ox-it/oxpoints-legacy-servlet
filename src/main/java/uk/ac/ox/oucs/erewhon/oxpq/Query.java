@@ -51,6 +51,7 @@ import net.sf.gaboto.vocabulary.RDFContext;
 import net.sf.gaboto.vocabulary.RDFGraph;
 import net.sf.gaboto.vocabulary.TimeVocab;
 import net.sf.gaboto.vocabulary.VCardVocab;
+import net.sf.gaboto.vocabulary.MeterVocab;
 
 import com.hp.hpl.jena.rdf.model.Property;
 
@@ -128,6 +129,9 @@ public final class Query {
 		map.put("adr", VCardVocab.adr);
 		map.put("lat", GeoVocab.lat);
 		map.put("long", GeoVocab.long_);
+
+		map.put("supplies", MeterVocab.supplies);
+		map.put("downstreamOf", MeterVocab.downstreamOf);
 
 		//map.put("sameAs", OWLVocab.sameAs);
 
@@ -383,6 +387,11 @@ public final class Query {
 			q.needsCodeLookup = true;
 			q.participantCoding = "hasOBNCode";
 			q.participantCode = it.substring(4);
+			return true;
+		} else if (it.startsWith("measure:")) {
+			q.needsCodeLookup = true;
+			q.participantCoding = "measureIdentifier";
+			q.participantCode = it.substring(8);
 			return true;
 		} else if (it.startsWith("finance:")) {
 			q.needsCodeLookup = true;

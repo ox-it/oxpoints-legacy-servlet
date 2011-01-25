@@ -549,15 +549,29 @@ public class OxPointsQueryServlet extends OxPointsServlet {
 					writer.print(",");
 				} else
 					first = false;
-				writer.print("\n  { id: \"");
+				writer.print("\n  {\"id\": \"");
 				writer.print(entity.getUri().substring(entity.getUri().lastIndexOf("/")+1));
-				writer.print("\", name: \"");
+				writer.print("\", \"name\": \"");
 				String name;
 				if (entity instanceof Place)
 					name = ((Place) entity).getFullyQualifiedTitle();
 				else
-					name = ((OxpEntity) entity).getName();
-				writer.print(StringEscapeUtils.escapeJavaScript(name)+"\"}");
+					name = entity.getName();
+				writer.print(StringEscapeUtils.escapeJavaScript(name)+"\"");
+				
+				List<String> altLabels = new LinkedList<String>();
+				if (entity.getAltLabels() != null) altLabels.addAll(entity.getAltLabels());
+				if (entity.getHiddenLabels() != null) altLabels.addAll(entity.getHiddenLabels());
+				if (altLabels.size() > 0) {
+					String labels = altLabels.get(0);
+					for (int i=1; i<altLabels.size(); i++)
+						labels += "\t" + altLabels.get(i);
+					writer.print(", \"altNames\": \"");
+					writer.print(StringEscapeUtils.escapeJavaScript(labels));
+					writer.print("\"");
+				}
+				writer.print("}");
+				
 			}
 			if (query.getJsCallback() != null)
 				writer.println("\n]});");

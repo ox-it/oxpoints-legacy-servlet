@@ -32,9 +32,14 @@
 
 package uk.ac.ox.oucs.erewhon.oxpq;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 import javax.servlet.http.HttpServletRequest;
@@ -58,10 +63,10 @@ import com.hp.hpl.jena.rdf.model.Property;
 public final class Query {
 
 
-	private String participantId;     // subject or object id
-	private String participantUri;  
+	private Collection<String> participantIDs;     // subject or object id
+	private Collection<String> participantURIs;  
 	private String participantCoding; // Coding system, other than id
-	private String participantCode;   
+	private Collection<String> participantCodes;   
 
 	private String type;
 	private String arc = null;
@@ -177,8 +182,7 @@ public final class Query {
 		} else if (resultsetSpec.startsWith("/all")) {
 			q.returnType = ReturnType.ALL;
 		} else if (resultsetSpec.startsWith("/id/")) {
-			q.setParticipantId(resultsetSpec.substring(4));
-			q.participantUri = ENTITY_PREFIX + q.participantId;
+			q.setParticipantIDs(resultsetSpec.substring(4));
 			q.returnType = ReturnType.INDIVIDUAL;
 		} else if (resultsetSpec.startsWith("/type/")) {  
 			q.type = resultsetSpec.substring(6);
@@ -314,10 +318,6 @@ public final class Query {
 		return jsCallback;
 	}
 
-	public String getUri() {
-		return participantUri;
-	}
-
 	public String getType() {
 		return type;
 	}
@@ -376,37 +376,35 @@ public final class Query {
 		if (it.startsWith("oucs:")) {
 			q.needsCodeLookup = true;
 			q.participantCoding = "hasOUCSCode";
-			q.participantCode = it.substring(5);
+			q.setParticipantCodes(it.substring(5));
 			return true;
 		} else if (it.startsWith("olis:")) {
 			q.needsCodeLookup = true;
 			q.participantCoding = "hasOLISCode";
-			q.participantCode = it.substring(5);
+			q.setParticipantCodes(it.substring(5));
 			return true;
 		} else if (it.startsWith("obn:")) {
 			q.needsCodeLookup = true;
 			q.participantCoding = "hasOBNCode";
-			q.participantCode = it.substring(4);
+			q.setParticipantCodes(it.substring(4));
 			return true;
 		} else if (it.startsWith("measure:")) {
 			q.needsCodeLookup = true;
 			q.participantCoding = "measureIdentifier";
-			q.participantCode = it.substring(8);
+			q.setParticipantCodes(it.substring(8));
 			return true;
 		} else if (it.startsWith("finance:")) {
 			q.needsCodeLookup = true;
 			q.participantCoding = "hasFinanceCode";
-			q.participantCode = it.substring(8);
+			q.setParticipantCodes(it.substring(8));
 			return true;
 		} else if (it.startsWith("id:")) {
 			q.requestedPropertyValue = it.substring(3); 
-			q.setParticipantId(q.requestedPropertyValue);
-			q.participantUri = ENTITY_PREFIX + q.participantId;
+			q.setParticipantIDs(q.requestedPropertyValue);
 			return true;
 		} else if (it.matches("^[0-9]+$")) { 
 			q.requestedPropertyValue = it;       
-			q.setParticipantId(it);
-			q.participantUri = ENTITY_PREFIX + q.participantId;
+			q.setParticipantIDs(it);
 			return true;
 		} else {
 			return false;
@@ -500,20 +498,20 @@ public final class Query {
 		return participantCoding;
 	}
 
-	public String getParticipantCode() {
-		return participantCode;
+	public Collection<String> getParticipantCodes() {
+		return participantCodes;
 	}
 
 	public boolean needsCodeLookup() {
 		return needsCodeLookup;
 	}
 
-	public void setParticipantUri(String uri) {
-		this.participantUri = uri;
+	public void setParticipantURIs(Collection<String> uris) {
+		this.participantURIs = uris;
 	}
 
-	public String getParticipantUri() {
-		return participantUri;
+	public Collection<String> getParticipantURIs() {
+		return participantURIs;
 	}
 
 	public String getSparqlQuery() {
@@ -521,20 +519,31 @@ public final class Query {
 	}
 
 	/**
-	 * @param participantId the participantId to set
+	 * @param participantIDs a comma-separated list of IDs
 	 */
-	 void setParticipantId(String participantId) {
-		 try { 
-			 new Integer(participantId); 
-		 } catch (NumberFormatException e){
-			 throw new AnticipatedException("Invalid id " + participantId, 400);
-		 }
-		 this.participantId = participantId;
-	 }
+	void setParticipantIDs(String participantIDs) {
+		setParticipantIDs(Arrays.asList(participantIDs.split(",")));
+	}
+	void setParticipantIDs(Collection<String> participantIDs) {
+		Set<String> uris = new HashSet<String>();
+		for (String participantID : participantIDs) {
+			if (!participantID.matches("^\\d{8}$"))
+				throw new AnticipatedException("Invalid id " + participantID, 400);
+			uris.add(ENTITY_PREFIX + participantID);
+		}
+		this.participantIDs = participantIDs;
+		setParticipantURIs(uris);
+	}
+	void setParticipantCodes(String participantCodes) {
+		setParticipantCodes(Arrays.asList(participantCodes.split(",")));
+	}
+	void setParticipantCodes(Collection<String> participantCodes) {
+		this.participantCodes = participantCodes;
+	}
 
-	 public TimeInstant getTimeInstant() {
-		 return timeInstant;
-	 }
+	public TimeInstant getTimeInstant() {
+		return timeInstant;
+	}
 
 }
 

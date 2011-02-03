@@ -37,6 +37,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -156,10 +157,11 @@ public class OxPointsQueryServlet extends OxPointsServlet {
 			return;
 		case INDIVIDUAL:
 			EntityPool pool = new EntityPool(gaboto, snapshot);
-			establishParticipantUri(query);
+			establishParticipantURIs(query);
 			if (snapshot != null)
 				System.err.println("We have " + snapshot.size() + " entities in snapshot before loadEntity");
-			pool.addEntity(snapshot.loadEntity(query.getUri()));
+			for (String participantURI : query.getParticipantURIs())
+				pool.addEntity(snapshot.loadEntity(participantURI));
 			output(pool, query, response);
 			return;
 		case TYPE_COLLECTION:
@@ -172,27 +174,30 @@ public class OxPointsQueryServlet extends OxPointsServlet {
 		case PROPERTY_SUBJECT:
 			EntityPool subjectPool = null;
 			if (requiresResource(query.getRequestedProperty())) {
-				establishParticipantUri(query);
-				if (query.getUri() == null)
-					throw new ResourceNotFoundException("Resource not found with coding " + query.getParticipantCoding() + 
-							" and value " + query.getParticipantCode());
-				GabotoEntity object = snapshot.loadEntity(query.getUri());
+				establishParticipantURIs(query);
+
+				Set<GabotoEntity> objects = new HashSet<GabotoEntity>();
 				EntityPool creationPool = EntityPool.createFrom(snapshot);
-				object.setCreatedFromPool(creationPool);
-				subjectPool = loadPoolWithActiveParticipants(object, query.getRequestedProperty()); 
+				for (String uri : query.getParticipantURIs()) {
+					GabotoEntity object = snapshot.loadEntity(uri);
+					object.setCreatedFromPool(creationPool);
+					objects.add(object);
+				}
+				subjectPool = loadPoolWithActiveParticipants(objects, query.getRequestedProperty()); 
 			} else { 
 				subjectPool = loadPoolWithEntitiesOfProperty(query.getRequestedProperty(), query.getRequestedPropertyValue());         
 			}
 			output(subjectPool, query, response);
 			return;
 		case PROPERTY_OBJECT: 
-			establishParticipantUri(query);
-			if (query.getUri() == null)
-				throw new ResourceNotFoundException("Resource not found with coding " + query.getParticipantCoding() + 
-						" and value " + query.getParticipantCode());
-			GabotoEntity subject = snapshot.loadEntity(query.getUri());
+			establishParticipantURIs(query);
+			Set<GabotoEntity> subjects = new HashSet<GabotoEntity>();
+			for (String uri : query.getParticipantURIs()) {
+				GabotoEntity object = snapshot.loadEntity(uri);
+				subjects.add(object);
+			}
 
-			EntityPool objectPool = loadPoolWithPassiveParticipants(subject, query.getRequestedProperty());
+			EntityPool objectPool = loadPoolWithPassiveParticipants(subjects, query.getRequestedProperty());
 			output(objectPool, query, response);
 			return;
 		case NOT_FILTERED_TYPE_COLLECTION:
@@ -291,12 +296,19 @@ public class OxPointsQueryServlet extends OxPointsServlet {
 		return pool;
 	}
 
+	private EntityPool loadPoolWithActiveParticipants(GabotoEntity passiveParticipant, Property prop) {
+		Set<GabotoEntity> passiveParticipants = new HashSet<GabotoEntity>();
+		passiveParticipants.add(passiveParticipant);
+		return loadPoolWithActiveParticipants(passiveParticipants, prop);
+	}
+
 	@SuppressWarnings("unchecked")
-	private EntityPool loadPoolWithActiveParticipants(GabotoEntity passiveParticipant, Property prop) { 
+	private EntityPool loadPoolWithActiveParticipants(Collection<GabotoEntity> passiveParticipants, Property prop) { 
 		if (prop == null)
 			throw new NullPointerException();
 		EntityPool pool = new EntityPool(gaboto, snapshot);
 		//System.err.println("loadPoolWithActiveParticipants" + passiveParticipant.getUri() + "  prop " + prop + " which ");
+		for (GabotoEntity passiveParticipant : passiveParticipants) {
 		Set<Entry<String, Object>> passiveProperties = passiveParticipant.getAllPassiveProperties().entrySet(); 
 		for (Entry<String, Object> entry : passiveProperties) {
 			if (entry.getKey().equals(prop.getURI())) {
@@ -320,31 +332,43 @@ public class OxPointsQueryServlet extends OxPointsServlet {
 				System.err.println("Ignoring:" + entry.getKey());
 			}
 		}
+		}
 		return pool;
 	}
 
-	private void establishParticipantUri(Query query) throws ResourceNotFoundException { 
+	private void establishParticipantURIs(Query query) throws ResourceNotFoundException { 
 		if (query.needsCodeLookup()) {
 			Property coding = Query.getPropertyFromAbbreviation(query.getParticipantCoding());
+			Collection<String> uris = new HashSet<String>();
 
-			EntityPool objectPool = snapshot.loadEntitiesWithProperty(coding, query.getParticipantCode());
-			boolean found = false;
-			for (GabotoEntity objectKey: objectPool) { 
-				if (found)
-					throw new RuntimeException("Found two:" + objectKey);
-				query.setParticipantUri(objectKey.getUri());
-				found = true;
+			for (String participantCode : query.getParticipantCodes()) {
+				EntityPool objectPool = snapshot.loadEntitiesWithProperty(coding, participantCode);
+				boolean found = false;
+				for (GabotoEntity objectKey: objectPool) { 
+					if (found)
+						throw new RuntimeException("Found two:" + objectKey);
+					uris.add(objectKey.getUri());
+					found = true;
+				}
 			}
+			query.setParticipantURIs(uris);
 		}
-		if (query.getParticipantUri() == null)
+		if (query.getParticipantURIs() == null || query.getParticipantURIs().size() == 0)
 			throw new ResourceNotFoundException("No resource found with coding " + query.getParticipantCoding() + 
-					" and value " + query.getParticipantCode());
+					" and value " + query.getParticipantCodes().toString());
+	}
+	private EntityPool loadPoolWithPassiveParticipants(GabotoEntity activeParticipant, Property prop) {
+		Set<GabotoEntity> activeParticipants = new HashSet<GabotoEntity>();
+		activeParticipants.add(activeParticipant);
+		return loadPoolWithPassiveParticipants(activeParticipants, prop);
 	}
 	@SuppressWarnings("unchecked")
-	private EntityPool loadPoolWithPassiveParticipants(GabotoEntity activeParticipant, Property prop) { 
+	private EntityPool loadPoolWithPassiveParticipants(Collection<GabotoEntity> activeParticipants, Property prop) { 
 		if (prop == null)
 			throw new NullPointerException();
 		EntityPool pool = new EntityPool(gaboto, snapshot);
+		
+		for (GabotoEntity activeParticipant : activeParticipants) {
 		Set<Entry<String, Object>> directProperties = activeParticipant.getAllDirectProperties().entrySet(); 
 		for (Entry<String, Object> entry : directProperties) {
 			if (entry.getKey().equals(prop.getURI())) {
@@ -367,6 +391,7 @@ public class OxPointsQueryServlet extends OxPointsServlet {
 			} else { 
 				System.err.println("Ignoring:" + entry.getKey());
 			}
+		}
 		}
 		return pool;
 	}

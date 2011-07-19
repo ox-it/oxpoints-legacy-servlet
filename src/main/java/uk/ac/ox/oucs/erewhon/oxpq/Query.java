@@ -123,6 +123,7 @@ public final class Query {
 		map.put("occupies", OxPointsVocab.occupies);
 		map.put("hasOUCSCode", OxPointsVocab.hasOUCSCode);
 		map.put("hasOLISCode", OxPointsVocab.hasOLISCode);
+		map.put("hasOLISAlephCode", OxPointsVocab.hasOLISAlephCode);
 		map.put("hasOBNCode", OxPointsVocab.hasOBNCode);
 		map.put("hasFinanceCode", OxPointsVocab.hasFinanceCode);
 		map.put("primaryPlace", OxPointsVocab.primaryPlace);
@@ -381,6 +382,11 @@ public final class Query {
 		} else if (it.startsWith("olis:")) {
 			q.needsCodeLookup = true;
 			q.participantCoding = "hasOLISCode";
+			q.setParticipantCodes(it.substring(5));
+			return true;
+		} else if (it.startsWith("olis-aleph:")) {
+			q.needsCodeLookup = true;
+			q.participantCoding = "hasOLISAlephCode";
 			q.setParticipantCodes(it.substring(5));
 			return true;
 		} else if (it.startsWith("obn:")) {

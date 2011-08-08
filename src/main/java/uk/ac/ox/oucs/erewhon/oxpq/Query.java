@@ -32,6 +32,8 @@
 
 package uk.ac.ox.oucs.erewhon.oxpq;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Enumeration;
@@ -54,6 +56,7 @@ import net.sf.gaboto.vocabulary.GeoVocab;
 import net.sf.gaboto.vocabulary.OxPointsVocab;
 import net.sf.gaboto.vocabulary.RDFContext;
 import net.sf.gaboto.vocabulary.RDFGraph;
+import net.sf.gaboto.vocabulary.SKOSVocab;
 import net.sf.gaboto.vocabulary.TimeVocab;
 import net.sf.gaboto.vocabulary.VCardVocab;
 import net.sf.gaboto.vocabulary.MeterVocab;
@@ -121,6 +124,7 @@ public final class Query {
 
 		map.put("isPartOf", DCTermsVocab.isPartOf);
 		map.put("occupies", OxPointsVocab.occupies);
+		map.put("member", SKOSVocab.member);
 		map.put("hasOUCSCode", OxPointsVocab.hasOUCSCode);
 		map.put("hasOLISCode", OxPointsVocab.hasOLISCode);
 		map.put("hasOLISAlephCode", OxPointsVocab.hasOLISAlephCode);
@@ -387,7 +391,11 @@ public final class Query {
 		} else if (it.startsWith("olis-aleph:")) {
 			q.needsCodeLookup = true;
 			q.participantCoding = "hasOLISAlephCode";
-			q.setParticipantCodes(it.substring(5));
+			try {
+				q.setParticipantCodes(URLDecoder.decode(it.substring(11), "UTF-8"));
+			} catch (UnsupportedEncodingException e) {
+				throw new RuntimeException(e);
+			}
 			return true;
 		} else if (it.startsWith("obn:")) {
 			q.needsCodeLookup = true;

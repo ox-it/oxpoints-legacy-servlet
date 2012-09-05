@@ -567,7 +567,7 @@ public class OxPointsQueryServlet extends OxPointsServlet {
 			}
 			if (query.getJsCallback() != null)
 				writer.print(query.getJsCallback()+'(');
-			writer.print("{ items: [");
+			writer.print("{\"items\": [");
 			
 			for (OxpEntity entity : entities) {
 				if (!first) {
@@ -582,7 +582,7 @@ public class OxPointsQueryServlet extends OxPointsServlet {
 					name = ((Place) entity).getFullyQualifiedTitle();
 				else
 					name = entity.getName();
-				writer.print(StringEscapeUtils.escapeJavaScript(name)+"\"");
+				writer.print(StringEscapeUtils.escapeJava(name)+"\"");
 				
 				List<String> altLabels = new LinkedList<String>();
 				if (entity.getAltLabels() != null) altLabels.addAll(entity.getAltLabels());
@@ -592,7 +592,7 @@ public class OxPointsQueryServlet extends OxPointsServlet {
 					for (int i=1; i<altLabels.size(); i++)
 						labels += "\t" + altLabels.get(i);
 					writer.print(", \"altNames\": \"");
-					writer.print(StringEscapeUtils.escapeJavaScript(labels));
+					writer.print(StringEscapeUtils.escapeJava(labels));
 					writer.print("\"");
 				}
 				writer.print("}");

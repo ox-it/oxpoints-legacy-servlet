@@ -1,3 +1,15 @@
+oxpoints-legacy-servlet (1.0.8) unstable; urgency=low
+
+  * Bump version for newer oxpoints-legacy
+
+ -- Alexander Dutton <alexander.dutton@it.ox.ac.uk>  Tue, 19 Jan 2016 16:47:00 +0000
+
+oxpoints-legacy-servlet (1.0.7) unstable; urgency=low
+
+  * Bump version for newer oxpoints-legacy
+
+ -- Alexander Dutton <alexander.dutton@it.ox.ac.uk>  Tue, 30 Jun 2015 12:04:35 +0100
+
 oxpoints-legacy-servlet (1.0.5) unstable; urgency=low
 
   * Create empty /var/lib/gaboto/oxpoints/0.3/ into which something should place the files to serve

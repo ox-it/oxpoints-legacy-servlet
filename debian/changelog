@@ -1,3 +1,9 @@
+oxpoints-legacy-servlet (1.1.5) unstable; urgency=low
+
+  * Bump version for newer oxpoints-legacy
+
+ -- Alexander Dutton <alexander.dutton@it.ox.ac.uk>  Tue, 21 Jan 2016 09:03:01 +0000
+
 oxpoints-legacy-servlet (1.0.8) unstable; urgency=low
 
   * Bump version for newer oxpoints-legacy

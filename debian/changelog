@@ -1,3 +1,9 @@
+oxpoints-legacy-servlet (1.2) unstable; urgency=low
+
+  * Set content-types properly on autosuggest responses
+
+ -- Alexander Dutton <alexander.dutton@it.ox.ac.uk>  Tue, 22 Mar 2016 22:17:41 +0000
+
 oxpoints-legacy-servlet (1.1.5) unstable; urgency=low
 
   * Bump version for newer oxpoints-legacy

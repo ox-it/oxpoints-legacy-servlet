@@ -4,7 +4,7 @@
 
  <groupId>uk.ac.ox.oucs.erewhon</groupId>
  <artifactId>oxpq</artifactId>
- <version>1.1.5</version>
+ <version>1.2</version>
  <packaging>war</packaging>
 
  <name>OxPoints query</name>

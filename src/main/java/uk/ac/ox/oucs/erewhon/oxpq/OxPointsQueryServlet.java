@@ -503,6 +503,7 @@ public class OxPointsQueryServlet extends OxPointsServlet {
 			output = createKml(pool, query);
 			response.setContentType("application/vnd.google-earth.kml+xml");
 		} else if (query.getFormat().equals("json") || query.getFormat().equals("js")) {
+			response.setContentType(query.getJsCallback() != null ? "text/javascript" : "application/json");
 
 			JSONPoolTransformer transformer = new JSONPoolTransformer();
 			transformer.setNesting(query.getJsonDepth());
@@ -511,7 +512,6 @@ public class OxPointsQueryServlet extends OxPointsServlet {
 			if (query.getFormat().equals("js")) {
 				output = query.getJsCallback() + "(" + output + ");";
 			}
-			response.setContentType("text/javascript");
 		} else if (query.getFormat().equals("gjson")) {
 			GeoJSONPoolTransfomer transformer = new GeoJSONPoolTransfomer();
 			if (query.getArc() != null) {
@@ -528,6 +528,7 @@ public class OxPointsQueryServlet extends OxPointsServlet {
 			response.setContentType("text/javascript");
 
 		} else if (query.getFormat().equals("autosuggest")) {
+			response.setContentType(query.getJsCallback() != null ? "text/javascript" : "application/json");
 			Map<String,List<OxpEntity>> places = new HashMap<String,List<OxpEntity>>();
 			Set<OxpEntity> entities = new HashSet<OxpEntity>();
 			for (GabotoEntity entity : pool.getEntities()) {
